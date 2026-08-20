@@ -21,8 +21,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return Project.objects.none()
-        # Admin can view all projects; Members can view all or projects they are part of
-        return Project.objects.all().order_by('-created_at')
+        
+        if user.is_admin_role():
+            return Project.objects.all().order_by('-created_at')
+            
+        # STRICT ENFORCEMENT: Team Members can ONLY view projects they are assigned to!
+        return Project.objects.filter(members=user).distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
         project = serializer.save(created_by=self.request.user)
