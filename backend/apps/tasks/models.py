@@ -100,3 +100,70 @@ class TaskComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.author} on {self.task.title}"
+
+
+class TaskActivity(models.Model):
+    """
+    Maintains chronological activity history for a task (Optional Enhancement).
+    """
+    class ActivityType(models.TextChoices):
+        CREATED = 'CREATED', 'Created Task'
+        STATUS_CHANGED = 'STATUS_CHANGED', 'Status Changed'
+        DEADLINE_CHANGED = 'DEADLINE_CHANGED', 'Deadline Changed'
+        REASSIGNED = 'REASSIGNED', 'Reassigned Task'
+        COMMENT_ADDED = 'COMMENT_ADDED', 'Comment Added'
+        FILE_ATTACHED = 'FILE_ATTACHED', 'File Attached'
+
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='activity_history'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='task_activities'
+    )
+    activity_type = models.CharField(
+        max_length=30,
+        choices=ActivityType.choices,
+        default=ActivityType.CREATED
+    )
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.activity_type}] {self.description} by {self.user}"
+
+
+class TaskAttachment(models.Model):
+    """
+    File attachments for a task (Optional Enhancement).
+    """
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.CASCADE,
+        related_name='attachments'
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uploaded_attachments'
+    )
+    file = models.FileField(upload_to='attachments/')
+    file_name = models.CharField(max_length=255)
+    file_size = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Attachment '{self.file_name}' on Task #{self.task.id}"

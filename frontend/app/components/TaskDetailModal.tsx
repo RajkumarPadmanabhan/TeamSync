@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Task, TaskStatus, TaskComment } from '../types';
+import { Task, TaskStatus, TaskComment, TaskActivity, TaskAttachment } from '../types';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -13,9 +13,12 @@ import {
   MessageSquare,
   Send,
   History,
-  Tag,
-  AlertCircle,
-  CheckCircle2
+  Paperclip,
+  Activity,
+  Upload,
+  FileText,
+  CheckCircle2,
+  Download
 } from 'lucide-react';
 
 interface TaskDetailModalProps {
@@ -34,15 +37,27 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   openDeadlineHistory,
 }) => {
   const { user } = useAuth();
+  const [activeSubTab, setActiveSubTab] = useState<'comments' | 'activity' | 'attachments'>('comments');
+
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  const [activities, setActivities] = useState<TaskActivity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+
+  const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (isOpen && task) {
       fetchComments(task.id);
+      fetchActivities(task.id);
+      fetchAttachments(task.id);
     }
   }, [isOpen, task]);
 
@@ -58,6 +73,30 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     }
   };
 
+  const fetchActivities = async (taskId: number) => {
+    try {
+      setLoadingActivities(true);
+      const data = await api.getTaskActivityHistory(taskId);
+      setActivities(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingActivities(false);
+    }
+  };
+
+  const fetchAttachments = async (taskId: number) => {
+    try {
+      setLoadingAttachments(true);
+      const data = await api.getTaskAttachments(taskId);
+      setAttachments(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAttachments(false);
+    }
+  };
+
   if (!isOpen || !task) return null;
 
   const handleStatusClick = async (status: TaskStatus) => {
@@ -65,6 +104,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     try {
       setUpdatingStatus(true);
       await onUpdateStatus(task.id, status);
+      await fetchActivities(task.id);
     } catch (err) {
       console.error(err);
     } finally {
@@ -80,10 +120,26 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       const added = await api.addTaskComment(task.id, newComment.trim());
       setComments((prev) => [...prev, added]);
       setNewComment('');
+      await fetchActivities(task.id);
     } catch (err) {
       console.error(err);
     } finally {
       setSubmittingComment(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingFile(true);
+      const uploaded = await api.uploadTaskAttachment(task.id, file);
+      setAttachments((prev) => [uploaded, ...prev]);
+      await fetchActivities(task.id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -110,6 +166,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -178,7 +240,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   onClick={() => openDeadlineHistory(task)}
                   className="ml-auto text-[10px] font-bold text-amber-400 hover:underline flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20"
                 >
-                  <History className="w-3 h-3" /> Audit Log ({task.deadline_history_count})
+                  <History className="w-3 h-3" /> Audit ({task.deadline_history_count})
                 </button>
               </div>
             </div>
@@ -221,72 +283,190 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Comments & Progress Feed */}
-          <div className="space-y-3 pt-4 border-t border-slate-800">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-indigo-400" />
-                <span>Comments & Progress Updates ({comments.length})</span>
-              </h4>
+          {/* Sub-Tabs: Comments / Activity Log / Attachments */}
+          <div className="space-y-4 pt-4 border-t border-slate-800">
+            <div className="flex items-center gap-4 border-b border-slate-800 pb-2">
+              <button
+                onClick={() => setActiveSubTab('comments')}
+                className={`text-xs font-bold flex items-center gap-1.5 pb-1 transition border-b-2 ${
+                  activeSubTab === 'comments'
+                    ? 'border-indigo-500 text-indigo-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Comments ({comments.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSubTab('activity')}
+                className={`text-xs font-bold flex items-center gap-1.5 pb-1 transition border-b-2 ${
+                  activeSubTab === 'activity'
+                    ? 'border-indigo-500 text-indigo-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Activity className="w-3.5 h-3.5" />
+                <span>Activity History ({activities.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSubTab('attachments')}
+                className={`text-xs font-bold flex items-center gap-1.5 pb-1 transition border-b-2 ${
+                  activeSubTab === 'attachments'
+                    ? 'border-indigo-500 text-indigo-400'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>Attachments ({attachments.length})</span>
+              </button>
             </div>
 
-            <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
-              {loadingComments ? (
-                <p className="text-xs text-slate-500">Loading comments...</p>
-              ) : comments.length === 0 ? (
-                <p className="text-xs text-slate-500 italic p-3 bg-slate-800/20 rounded-xl text-center">
-                  No comments or progress updates posted yet.
-                </p>
-              ) : (
-                comments.map((c) => {
-                  const author = c.author_detail;
-                  return (
-                    <div key={c.id} className="p-3 bg-slate-800/60 border border-slate-800 rounded-xl space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={
-                              author?.avatar_url ||
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                author?.first_name || author?.username || 'User'
-                              )}&background=6366f1&color=fff`
-                            }
-                            alt="author"
-                            className="w-5 h-5 rounded-full object-cover"
-                          />
-                          <span className="font-semibold text-slate-200">
-                            {author?.first_name ? `${author.first_name} ${author.last_name}` : author?.username}
+            {/* SUB-TAB 1: COMMENTS */}
+            {activeSubTab === 'comments' && (
+              <div className="space-y-3">
+                <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                  {loadingComments ? (
+                    <p className="text-xs text-slate-500">Loading comments...</p>
+                  ) : comments.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic p-3 bg-slate-800/20 rounded-xl text-center">
+                      No comments or progress updates posted yet.
+                    </p>
+                  ) : (
+                    comments.map((c) => {
+                      const author = c.author_detail;
+                      return (
+                        <div key={c.id} className="p-3 bg-slate-800/60 border border-slate-800 rounded-xl space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={
+                                  author?.avatar_url ||
+                                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    author?.first_name || author?.username || 'User'
+                                  )}&background=6366f1&color=fff`
+                                }
+                                alt="author"
+                                className="w-5 h-5 rounded-full object-cover"
+                              />
+                              <span className="font-semibold text-slate-200">
+                                {author?.first_name ? `${author.first_name} ${author.last_name}` : author?.username}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {new Date(c.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 pl-7 leading-relaxed">{c.content}</p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <form onSubmit={handleAddComment} className="flex gap-2 pt-2">
+                  <input
+                    type="text"
+                    placeholder="Write a comment or progress update..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="flex-1 bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-xl px-3.5 py-2.5 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={submittingComment || !newComment.trim()}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Post</span>
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: ACTIVITY HISTORY (OPTIONAL ENHANCEMENT) */}
+            {activeSubTab === 'activity' && (
+              <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                {loadingActivities ? (
+                  <p className="text-xs text-slate-500">Loading task activity history...</p>
+                ) : activities.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic p-3 bg-slate-800/20 rounded-xl text-center">
+                    No task activities recorded yet.
+                  </p>
+                ) : (
+                  activities.map((act) => (
+                    <div key={act.id} className="p-3 bg-slate-800/40 border border-slate-800 rounded-xl flex items-start gap-3 text-xs">
+                      <div className="p-2 rounded-lg bg-slate-800 text-indigo-400 shrink-0">
+                        <Activity className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-200">{act.activity_type.replace('_', ' ')}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {new Date(act.created_at).toLocaleString()}
                           </span>
                         </div>
-                        <span className="text-[10px] text-slate-500 font-mono">
-                          {new Date(c.created_at).toLocaleString()}
-                        </span>
+                        <p className="text-slate-400 mt-0.5">{act.description}</p>
                       </div>
-                      <p className="text-xs text-slate-300 pl-7 leading-relaxed">{c.content}</p>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
 
-            {/* Add Comment Input Form */}
-            <form onSubmit={handleAddComment} className="flex gap-2 pt-2">
-              <input
-                type="text"
-                placeholder="Write a comment or progress update..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="flex-1 bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-xl px-3.5 py-2.5 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={submittingComment || !newComment.trim()}
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Post</span>
-              </button>
-            </form>
+            {/* SUB-TAB 3: ATTACHMENTS (OPTIONAL ENHANCEMENT) */}
+            {activeSubTab === 'attachments' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-400">Attached files & documents</p>
+                  <label className="cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload File</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                      disabled={uploadingFile}
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {loadingAttachments ? (
+                    <p className="text-xs text-slate-500">Loading attachments...</p>
+                  ) : attachments.length === 0 ? (
+                    <p className="text-xs text-slate-500 italic p-3 bg-slate-800/20 rounded-xl text-center">
+                      No attachments uploaded for this task yet.
+                    </p>
+                  ) : (
+                    attachments.map((att) => (
+                      <div key={att.id} className="p-3 bg-slate-800/60 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5 truncate">
+                          <FileText className="w-4 h-4 text-indigo-400 shrink-0" />
+                          <div className="truncate">
+                            <p className="font-semibold text-slate-200 truncate">{att.file_name}</p>
+                            <p className="text-[10px] text-slate-500">
+                              {formatFileSize(att.file_size)} • Uploaded by {att.uploaded_by_detail?.first_name || att.uploaded_by_detail?.username || 'User'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <a
+                          href={att.file.startsWith('http') ? att.file : `http://localhost:8000${att.file}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-indigo-400 hover:bg-slate-700 rounded-lg transition shrink-0"
+                          title="Download / View File"
+                        >
+                          <Download className="w-4 h-4" />
+                        </a>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

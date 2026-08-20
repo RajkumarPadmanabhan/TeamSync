@@ -55,6 +55,27 @@ export interface TaskComment {
   created_at: string;
 }
 
+export interface TaskActivity {
+  id: number;
+  task: number;
+  user?: number | null;
+  user_detail?: User | null;
+  activity_type: 'CREATED' | 'STATUS_CHANGED' | 'DEADLINE_CHANGED' | 'REASSIGNED' | 'COMMENT_ADDED' | 'FILE_ATTACHED';
+  description: string;
+  created_at: string;
+}
+
+export interface TaskAttachment {
+  id: number;
+  task: number;
+  uploaded_by?: number | null;
+  uploaded_by_detail?: User | null;
+  file: string;
+  file_name: string;
+  file_size: number;
+  created_at: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -72,6 +93,8 @@ export interface Task {
   updated_at: string;
   deadline_history_count: number;
   comments_count: number;
+  activity_count: number;
+  attachments_count: number;
 }
 
 export interface DashboardStats {
