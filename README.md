@@ -1,5 +1,5 @@
 
-# TeamSync / TeamTrack — Project & Task Management Suite for Teams
+# TeamSync — Project & Task Management Suite for Teams
 
 | Field | Value |
 | :--- | :--- |
