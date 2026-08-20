@@ -60,7 +60,7 @@ class TaskSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
 
     def get_deadline_history_count(self, obj):
-        return obj.deadline_history.count()
+        return obj.deadline_history.filter(previous_deadline__isnull=False).count()
 
     def get_comments_count(self, obj):
         return obj.comments.count()

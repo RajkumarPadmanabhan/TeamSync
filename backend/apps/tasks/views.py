@@ -250,18 +250,30 @@ class TaskViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def dashboard_stats(self, request):
         user = request.user
-        total_projects = Project.objects.count()
-        total_tasks = Task.objects.count()
-        completed_tasks = Task.objects.filter(status='COMPLETED').count()
-        in_progress_tasks = Task.objects.filter(status='IN_PROGRESS').count()
-        todo_tasks = Task.objects.filter(status='TODO').count()
-        in_review_tasks = Task.objects.filter(status='IN_REVIEW').count()
-        # Count of distinct tasks that have had deadline revisions
-        total_deadline_changes = DeadlineHistory.objects.values('task').distinct().count()
-        
-        my_tasks_count = Task.objects.filter(assigned_to=user).count() if user.is_authenticated else 0
-        my_completed_tasks = Task.objects.filter(assigned_to=user, status='COMPLETED').count() if user.is_authenticated else 0
+        if not user.is_authenticated:
+            return Response({})
+            
+        if user.is_admin_role():
+            total_projects = Project.objects.count()
+            total_tasks = Task.objects.count()
+            completed_tasks = Task.objects.filter(status='COMPLETED').count()
+            in_progress_tasks = Task.objects.filter(status='IN_PROGRESS').count()
+            todo_tasks = Task.objects.filter(status='TODO').count()
+            in_review_tasks = Task.objects.filter(status='IN_REVIEW').count()
+            total_deadline_changes = DeadlineHistory.objects.filter(previous_deadline__isnull=False).values('task').distinct().count()
+        else:
+            member_projects = Project.objects.filter(members=user)
+            member_tasks = Task.objects.filter(assigned_to=user)
+            total_projects = member_projects.count()
+            total_tasks = member_tasks.count()
+            completed_tasks = member_tasks.filter(status='COMPLETED').count()
+            in_progress_tasks = member_tasks.filter(status='IN_PROGRESS').count()
+            todo_tasks = member_tasks.filter(status='TODO').count()
+            in_review_tasks = member_tasks.filter(status='IN_REVIEW').count()
+            total_deadline_changes = DeadlineHistory.objects.filter(task__in=member_tasks, previous_deadline__isnull=False).values('task').distinct().count()
 
+        my_tasks_count = Task.objects.filter(assigned_to=user).count()
+        my_completed_tasks = Task.objects.filter(assigned_to=user, status='COMPLETED').count()
         completion_rate = round((completed_tasks / total_tasks * 100)) if total_tasks > 0 else 0
 
         return Response({
