@@ -661,29 +661,58 @@ export default function Home() {
                         key={t.id}
                         className="bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 transition shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4"
                       >
-                        <div className="space-y-1.5 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                              {t.project_name || `Project #${t.project}`}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${priorityBadge[t.priority]}`}>
-                              {t.priority}
-                            </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${statusBadge[t.status]}`}>
-                              {t.status.replace('_', ' ')}
-                            </span>
-                          </div>
-
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {/* Completion Checkbox */}
                           <button
-                            onClick={() => openTaskDetail(t)}
-                            className="text-left font-bold text-sm text-white hover:text-indigo-300 transition truncate block"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newStatus = t.status === 'COMPLETED' ? 'IN_PROGRESS' : 'COMPLETED';
+                              handleUpdateStatus(t.id, newStatus);
+                            }}
+                            className={`w-6 h-6 rounded-lg border flex items-center justify-center transition shrink-0 mt-0.5 ${
+                              t.status === 'COMPLETED'
+                                ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/30'
+                                : 'bg-slate-800/80 border-slate-700 text-transparent hover:border-emerald-500 hover:text-emerald-400/50'
+                            }`}
+                            title={t.status === 'COMPLETED' ? 'Mark as In Progress' : 'Mark Task as Completed'}
                           >
-                            {t.title}
+                            <CheckCircle2 className="w-4 h-4" />
                           </button>
 
-                          <p className="text-xs text-slate-400 line-clamp-1">
-                            {t.description || 'No description provided.'}
-                          </p>
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                {t.project_name || `Project #${t.project}`}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${priorityBadge[t.priority]}`}>
+                                {t.priority}
+                              </span>
+
+                              {/* Quick Status Selector */}
+                              <select
+                                value={t.status}
+                                onChange={(e) => handleUpdateStatus(t.id, e.target.value as TaskStatus)}
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded border focus:outline-none cursor-pointer ${statusBadge[t.status]}`}
+                                title="Click to update task progress status"
+                              >
+                                <option value="TODO" className="bg-slate-900 text-slate-300 font-sans">To Do</option>
+                                <option value="IN_PROGRESS" className="bg-slate-900 text-blue-300 font-sans">In Progress</option>
+                                <option value="IN_REVIEW" className="bg-slate-900 text-purple-300 font-sans">In Review</option>
+                                <option value="COMPLETED" className="bg-slate-900 text-emerald-300 font-sans">Completed ✓</option>
+                              </select>
+                            </div>
+
+                            <button
+                              onClick={() => openTaskDetail(t)}
+                              className={`text-left font-bold text-sm hover:text-indigo-300 transition truncate block ${t.status === 'COMPLETED' ? 'text-slate-400 line-through' : 'text-white'}`}
+                            >
+                              {t.title}
+                            </button>
+
+                            <p className="text-xs text-slate-400 line-clamp-1">
+                              {t.description || 'No description provided.'}
+                            </p>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-4 text-xs shrink-0 flex-wrap">
