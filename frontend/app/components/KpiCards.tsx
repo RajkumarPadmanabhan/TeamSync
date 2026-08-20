@@ -2,13 +2,12 @@
 
 import React from 'react';
 import { DashboardStats } from '../types';
+import { useTheme } from '../context/ThemeContext';
 import {
   FolderKanban,
   CheckCircle2,
   Clock,
   History,
-  TrendingUp,
-  AlertCircle
 } from 'lucide-react';
 
 interface KpiCardsProps {
@@ -16,6 +15,9 @@ interface KpiCardsProps {
 }
 
 export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   if (!stats) return null;
 
   const kpis = [
@@ -24,36 +26,32 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
       value: stats.total_projects,
       subtitle: `${stats.completed_tasks} tasks completed`,
       icon: FolderKanban,
-      gradient: 'from-blue-600/20 via-indigo-600/10 to-transparent',
-      borderColor: 'border-blue-500/30',
-      iconBg: 'bg-blue-500/20 text-blue-400',
+      borderColor: isDark ? 'border-[#3c5638]' : 'border-[#d4ddcf]',
+      iconBg: isDark ? 'bg-[#3c5638] text-[#e9edc9]' : 'bg-[#e9edc9] text-[#1b2819]',
     },
     {
       title: 'Active Tasks',
       value: stats.total_tasks,
       subtitle: `${stats.in_progress_tasks} in progress, ${stats.todo_tasks} to do`,
       icon: Clock,
-      gradient: 'from-indigo-600/20 via-purple-600/10 to-transparent',
-      borderColor: 'border-indigo-500/30',
-      iconBg: 'bg-indigo-500/20 text-indigo-400',
+      borderColor: isDark ? 'border-[#3c5638]' : 'border-[#d4ddcf]',
+      iconBg: isDark ? 'bg-[#556b2f] text-[#fefae0]' : 'bg-[#d8f3dc] text-[#1b2819]',
     },
     {
       title: 'Project Completion Rate',
       value: `${stats.completion_rate}%`,
       subtitle: `${stats.completed_tasks} of ${stats.total_tasks} tasks done`,
       icon: CheckCircle2,
-      gradient: 'from-emerald-600/20 via-teal-600/10 to-transparent',
-      borderColor: 'border-emerald-500/30',
-      iconBg: 'bg-emerald-500/20 text-emerald-400',
+      borderColor: isDark ? 'border-[#3c5638]' : 'border-[#d4ddcf]',
+      iconBg: isDark ? 'bg-[#386641] text-[#fefae0]' : 'bg-[#c7f9cc] text-[#1b2819]',
     },
     {
       title: 'Deadline Revision Audit Logs',
       value: stats.total_deadline_changes,
       subtitle: 'Recorded deadline adjustments',
       icon: History,
-      gradient: 'from-amber-600/20 via-orange-600/10 to-transparent',
-      borderColor: 'border-amber-500/30',
-      iconBg: 'bg-amber-500/20 text-amber-400',
+      borderColor: isDark ? 'border-[#3c5638]' : 'border-[#d4ddcf]',
+      iconBg: isDark ? 'bg-[#283925] text-[#e9edc9]' : 'bg-[#faedcd] text-[#1b2819]',
       badge: 'Challenge Metric',
     },
   ];
@@ -65,28 +63,32 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ stats }) => {
         return (
           <div
             key={idx}
-            className={`relative overflow-hidden rounded-2xl bg-slate-900/90 border ${kpi.borderColor} p-5 bg-gradient-to-br ${kpi.gradient} shadow-lg transition-all hover:scale-[1.01]`}
+            className={`relative overflow-hidden rounded-2xl border ${kpi.borderColor} p-5 shadow-lg transition-all hover:scale-[1.01] ${
+              isDark ? 'bg-[#1f2c1d] text-[#fefae0]' : 'bg-white text-[#1b2819]'
+            }`}
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-[#e9edc9]' : 'text-[#385233]'}`}>
                   {kpi.title}
                 </p>
-                <h3 className="text-3xl font-extrabold text-white mt-1 tracking-tight">
+                <h3 className={`text-3xl font-extrabold mt-1 tracking-tight ${isDark ? 'text-[#fefae0]' : 'text-[#141d13]'}`}>
                   {kpi.value}
                 </h3>
               </div>
-              <div className={`p-3 rounded-xl ${kpi.iconBg} ring-1 ring-white/10`}>
+              <div className={`p-3 rounded-xl ${kpi.iconBg} ring-1 ring-black/10`}>
                 <Icon className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-800/80">
-              <span className="text-[11px] text-slate-400 font-medium">
+            <div className={`mt-4 flex items-center justify-between pt-3 border-t ${isDark ? 'border-[#3c5638]' : 'border-[#e2e8f0]'}`}>
+              <span className={`text-[11px] font-medium ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                 {kpi.subtitle}
               </span>
               {kpi.badge && (
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border uppercase ${
+                  isDark ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]' : 'bg-[#faedcd] text-[#1b2819] border-[#d4ddcf]'
+                }`}>
                   {kpi.badge}
                 </span>
               )}

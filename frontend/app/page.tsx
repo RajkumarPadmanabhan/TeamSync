@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { api } from './lib/api';
-import { Project, Task, DashboardStats, TaskStatus, TaskPriority, User, ProjectInvitation } from './types';
+import { Project, Task, DashboardStats, TaskStatus, TaskPriority, User, ProjectInvitation, Role } from './types';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { KpiCards } from './components/KpiCards';
@@ -28,13 +29,10 @@ import {
   Clock,
   MessageSquare,
   AlertCircle,
-  Sparkles,
   ChevronRight,
-  TrendingUp,
   CheckCircle2,
   Trash2,
   Edit,
-  ShieldCheck,
   UserCheck,
   Mail,
   CheckCircle,
@@ -43,6 +41,8 @@ import {
 
 export default function Home() {
   const { user, isAdmin, allUsers, refreshUsers, loading: authLoading } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Active Tab View
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team' | 'requests'>('overview');
@@ -70,68 +70,41 @@ export default function Home() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
 
-  // Toast & Warning Dialog state
+  // Toast Notification System
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
-  const showToast = (type: ToastType, title: string, message: string) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, type, title, message }]);
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('');
+  const [assignedToMeFilter, setAssignedToMeFilter] = useState(false);
+
+  const showToast = (message: string, type: ToastType = 'info') => {
+    const id = Date.now().toString() + Math.random().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
   };
 
   const dismissToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const handleSaveUserProfile = async (data: any) => {
-    try {
-      if (data.id === user?.id) {
-        await api.updateProfile(data);
-      } else if (data.id) {
-        await api.updateUser(data.id, data);
-      }
-      await refreshUsers();
-      await loadAllData();
-      showToast('success', 'Profile Updated', 'User profile information updated successfully.');
-    } catch (err: any) {
-      showToast('error', 'Update Failed', err.message || 'Failed to update user profile.');
-    }
-  };
-
-  // Filters for tasks
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [priorityFilter, setPriorityFilter] = useState<string>('');
-  const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
-
-  const fetchInvitations = async () => {
-    try {
-      if (api.getToken()) {
-        const invList = await api.getProjectInvitations();
-        setInvitations(invList);
-      }
-    } catch (err) {
-      console.error('Error fetching invitations:', err);
-    }
-  };
-
   const loadAllData = async () => {
+    if (!api.getToken()) return;
     try {
       setLoadingData(true);
       setDataError(null);
-
-      const [projectsData, tasksData, statsData] = await Promise.all([
+      const [projData, taskData, statsData, invData] = await Promise.all([
         api.getProjects(),
         api.getTasks(),
         api.getDashboardStats(),
+        api.getProjectInvitations(),
       ]);
-
-      setProjects(projectsData);
-      setTasks(tasksData);
+      setProjects(projData);
+      setTasks(taskData);
       setStats(statsData);
-      await fetchInvitations();
+      setInvitations(invData);
     } catch (err: any) {
-      console.error(err);
-      setDataError(err.message || 'Failed to connect to backend server.');
+      setDataError(err.message || 'Failed to sync workspace data.');
     } finally {
       setLoadingData(false);
     }
@@ -143,144 +116,168 @@ export default function Home() {
     }
   }, [user]);
 
-  // Handle Invitations
-  const handleRespondInvitation = async (invitationId: number, action: 'accept' | 'reject') => {
-    try {
-      const res = await api.respondToInvitation(invitationId, action);
-      showToast(action === 'accept' ? 'success' : 'info', 'Project Invitation Updated', res.detail);
-      await loadAllData();
-    } catch (err: any) {
-      showToast('error', 'Action Failed', err.message || 'Failed to respond to invitation.');
-    }
-  };
-
-  const handleSendProjectInvitation = async (projectId: number, userId: number) => {
-    try {
-      const res = await api.sendProjectInvitation(projectId, userId);
-      showToast('success', 'Invitation Request Sent', res.detail);
-      await fetchInvitations();
-    } catch (err: any) {
-      showToast('error', 'Invitation Error', err.message || 'Failed to send invitation request.');
-    }
-  };
-
-  // Security Guard: If unauthenticated, securely render AuthScreen and prevent back navigation
-  if (!user && !authLoading) {
-    if (typeof window !== 'undefined' && window.history.state?.protected) {
-      window.history.replaceState(null, '', '/login');
-    }
-    return <AuthScreen onSuccess={loadAllData} />;
+  if (authLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-6 ${isDark ? 'bg-[#141d13] text-[#fefae0]' : 'bg-[#faf8f3] text-[#1b2819]'}`}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-[#556b2f] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold uppercase tracking-wider">Loading TeamSync Suite...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Handle Project Creation or Update
+  if (!user) {
+    return <AuthScreen onSuccess={() => loadAllData()} />;
+  }
+
+  // Action handlers
   const handleSaveProject = async (data: any) => {
     try {
-      if (data.id) {
-        await api.updateProject(data.id, data);
-        showToast('success', 'Project Updated', `Project "${data.name}" updated successfully.`);
+      const payload = {
+        name: data.name,
+        description: data.description,
+        status: data.status,
+        start_date: data.start_date,
+        end_date: data.end_date,
+        member_ids: data.member_ids || data.members || [],
+      };
+      if (editingProject) {
+        await api.updateProject(editingProject.id, payload);
+        showToast(`Project "${data.name}" updated successfully!`, 'success');
       } else {
-        await api.createProject(data);
-        showToast('success', 'Project Created', `New project "${data.name}" created successfully.`);
+        await api.createProject(payload);
+        showToast(`Project "${data.name}" created successfully!`, 'success');
       }
+      setIsProjectModalOpen(false);
+      setEditingProject(null);
       await loadAllData();
     } catch (err: any) {
-      showToast('error', 'Project Save Error', err.message || 'Failed to save project.');
+      showToast(err.message || 'Failed to save project.', 'error');
     }
   };
 
   const handleDeleteProject = (projectId: number, projectName: string) => {
     setConfirmDialog({
       isOpen: true,
-      title: 'Delete Project Warning',
-      message: `Are you sure you want to delete project "${projectName}"? This action cannot be undone and will delete all associated tasks.`,
+      title: 'Delete Project',
+      message: `Are you sure you want to delete project "${projectName}"? All associated tasks will be permanently removed.`,
       confirmText: 'Delete Project',
+      cancelText: 'Cancel',
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
           await api.deleteProject(projectId);
-          if (selectedProjectId === projectId) {
-            setSelectedProjectId(null);
-          }
+          showToast(`Project "${projectName}" deleted successfully.`, 'warning');
+          if (selectedProjectId === projectId) setSelectedProjectId(null);
           await loadAllData();
-          showToast('warning', 'Project Deleted', `Project "${projectName}" and its tasks were deleted.`);
         } catch (err: any) {
-          showToast('error', 'Delete Failed', err.message || 'Failed to delete project.');
+          showToast(err.message || 'Failed to delete project.', 'error');
         }
       },
       onCancel: () => setConfirmDialog(null),
     });
   };
 
-  // Handle Task Creation or Update
   const handleSaveTask = async (data: any) => {
     try {
-      if (data.id) {
-        await api.updateTask(data.id, data);
-        showToast('success', 'Task Updated', `Task "${data.title}" updated successfully.`);
+      if (editingTask) {
+        await api.updateTask(editingTask.id, data);
+        showToast('Task updated successfully!', 'success');
       } else {
         await api.createTask(data);
-        showToast('success', 'Task Assigned', `Task "${data.title}" assigned successfully.`);
+        showToast('New task assigned successfully!', 'success');
       }
+      setIsTaskModalOpen(false);
+      setEditingTask(null);
       await loadAllData();
     } catch (err: any) {
-      showToast('error', 'Task Save Error', err.message || 'Failed to save task.');
+      showToast(err.message || 'Failed to save task.', 'error');
     }
   };
 
-  // Handle Quick Status Update
-  const handleUpdateStatus = async (taskId: number, newStatus: TaskStatus) => {
-    try {
-      await api.updateTask(taskId, { status: newStatus });
-      await loadAllData();
-      if (selectedTaskForDetail && selectedTaskForDetail.id === taskId) {
-        setSelectedTaskForDetail((prev) => (prev ? { ...prev, status: newStatus } : null));
-      }
-      showToast('info', 'Status Updated', `Task status updated to ${newStatus.replace('_', ' ')}.`);
-    } catch (err: any) {
-      showToast('error', 'Update Failed', err.message || 'Failed to update status.');
-    }
-  };
-
-  // Handle Delete Task
   const handleDeleteTask = async (taskId: number) => {
     setConfirmDialog({
       isOpen: true,
-      title: 'Delete Task Warning',
+      title: 'Delete Task',
       message: 'Are you sure you want to delete this task? This action cannot be undone.',
       confirmText: 'Delete Task',
+      cancelText: 'Cancel',
       onConfirm: async () => {
         setConfirmDialog(null);
         try {
           await api.deleteTask(taskId);
+          showToast('Task deleted successfully.', 'warning');
           await loadAllData();
-          showToast('warning', 'Task Deleted', 'Task was deleted successfully.');
         } catch (err: any) {
-          showToast('error', 'Delete Failed', err.message || 'Failed to delete task.');
+          showToast(err.message || 'Failed to delete task.', 'error');
         }
       },
       onCancel: () => setConfirmDialog(null),
     });
   };
 
-  // Handle Create Team Member
-  const handleCreateUser = async (userData: any) => {
+  const handleUpdateStatus = async (taskId: number, newStatus: TaskStatus) => {
     try {
-      await api.createUser(userData);
-      await refreshUsers();
+      await api.updateTask(taskId, { status: newStatus });
+      showToast(`Task status updated to ${newStatus.replace('_', ' ')}!`, 'success');
       await loadAllData();
-      showToast('success', 'Team Member Added', `User "${userData.username}" created successfully.`);
     } catch (err: any) {
-      showToast('error', 'Creation Error', err.message || 'Failed to add user.');
+      showToast(err.message || 'Failed to update status.', 'error');
     }
   };
 
-  // Open Deadline Modal
+  const handleCreateUser = async (data: any) => {
+    try {
+      await api.createUser(data);
+      showToast(`User ${data.username} created successfully as ${data.role}!`, 'success');
+      setIsTeamModalOpen(false);
+      await refreshUsers();
+      await loadAllData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to create user.', 'error');
+    }
+  };
+
+  const handleSaveUserProfile = async (updatedData: { id?: number; first_name: string; last_name: string; email: string; role: Role; department: string }) => {
+    try {
+      const targetId = updatedData.id || selectedUserForEdit?.id || user.id;
+      await api.updateUser(targetId, updatedData);
+      showToast('User profile info updated successfully!', 'success');
+      setIsProfileModalOpen(false);
+      setSelectedUserForEdit(null);
+      await refreshUsers();
+      await loadAllData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update profile info.', 'error');
+    }
+  };
+
+  const handleSendProjectInvitation = async (projectId: number, userId: number) => {
+    try {
+      await api.sendProjectInvitation(projectId, userId);
+      showToast('Project join invitation sent to user!', 'success');
+      await loadAllData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to send invitation request.', 'error');
+    }
+  };
+
+  const handleRespondInvitation = async (invitationId: number, action: 'accept' | 'reject') => {
+    try {
+      await api.respondToInvitation(invitationId, action);
+      showToast(`Invitation ${action}ed successfully!`, action === 'accept' ? 'success' : 'warning');
+      await loadAllData();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to process request.', 'error');
+    }
+  };
+
   const openDeadlineHistoryModal = (t: Task) => {
     setSelectedTaskForDeadline(t);
     setIsDeadlineModalOpen(true);
   };
 
-  // Open Task Detail Modal
   const openTaskDetail = (t: Task) => {
     setSelectedTaskForDetail(t);
     setIsDetailModalOpen(true);
@@ -305,7 +302,7 @@ export default function Home() {
     return true;
   });
 
-  // Filtered Projects based on global search query
+  // Filtered Projects
   const filteredProjects = projects.filter((p) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase().trim();
@@ -319,17 +316,17 @@ export default function Home() {
   });
 
   const priorityBadge: Record<string, string> = {
-    LOW: 'bg-slate-800 text-slate-300 border-slate-700',
-    MEDIUM: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    HIGH: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-    URGENT: 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-bold',
+    LOW: isDark ? 'bg-[#283925] text-[#e9edc9] border-[#3c5638]' : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]',
+    MEDIUM: isDark ? 'bg-[#386641]/40 text-[#fefae0] border-[#386641]' : 'bg-[#d8f3dc] text-[#1b2819] border-[#385233]/30',
+    HIGH: isDark ? 'bg-[#556b2f]/60 text-[#fefae0] border-[#556b2f]' : 'bg-[#c7f9cc] text-[#1b2819] border-[#385233]',
+    URGENT: isDark ? 'bg-rose-900/60 text-rose-200 border-rose-700 font-bold' : 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
   };
 
   const statusBadge: Record<string, string> = {
-    TODO: 'bg-slate-800 text-slate-300 border-slate-700',
-    IN_PROGRESS: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30',
-    IN_REVIEW: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    COMPLETED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+    TODO: isDark ? 'bg-[#283925] text-[#e9edc9] border-[#3c5638]' : 'bg-[#faf8f3] text-[#1b2819] border-[#d4ddcf]',
+    IN_PROGRESS: isDark ? 'bg-[#386641]/60 text-[#fefae0] border-[#386641]' : 'bg-[#e9edc9] text-[#1b2819] border-[#556b2f]',
+    IN_REVIEW: isDark ? 'bg-[#556b2f]/60 text-[#fefae0] border-[#556b2f]' : 'bg-[#faedcd] text-[#1b2819] border-[#d4ddcf]',
+    COMPLETED: isDark ? 'bg-[#283925] text-[#a3b18a] border-[#386641]' : 'bg-[#c7f9cc] text-[#1b2819] border-[#385233]',
   };
 
   const formatDate = (dateStr?: string | null) => {
@@ -342,7 +339,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#141d13] text-[#fefae0] flex flex-col font-sans antialiased selection:bg-[#556b2f] selection:text-[#fefae0]">
+    <div className={`min-h-screen flex flex-col font-sans antialiased transition-colors ${
+      isDark
+        ? 'bg-[#141d13] text-[#fefae0] selection:bg-[#556b2f] selection:text-[#fefae0]'
+        : 'bg-[#faf8f3] text-[#1b2819] selection:bg-[#385233] selection:text-[#fefae0]'
+    }`}>
       {/* MNC Navigation Topbar */}
       <Navbar
         onRefresh={loadAllData}
@@ -396,16 +397,20 @@ export default function Home() {
 
           {/* Active Search Query Status Bar */}
           {searchQuery.trim() && (
-            <div className="p-3 bg-indigo-600/20 border border-indigo-500/40 rounded-2xl text-xs text-indigo-200 flex items-center justify-between animate-in fade-in">
+            <div className={`p-3 rounded-2xl border text-xs flex items-center justify-between animate-in fade-in ${
+              isDark
+                ? 'bg-[#283925] border-[#3c5638] text-[#fefae0]'
+                : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+            }`}>
               <div className="flex items-center gap-2">
-                <Search className="w-4 h-4 text-indigo-400 shrink-0" />
+                <Search className="w-4 h-4 shrink-0 text-[#556b2f]" />
                 <span>
-                  Filtering results for &quot;<strong className="text-white font-bold">{searchQuery}</strong>&quot; — Found <strong>{filteredTasks.length}</strong> task(s) and <strong>{filteredProjects.length}</strong> project(s)
+                  Filtering results for &quot;<strong className="font-bold">{searchQuery}</strong>&quot; — Found <strong>{filteredTasks.length}</strong> task(s) and <strong>{filteredProjects.length}</strong> project(s)
                 </span>
               </div>
               <button
                 onClick={() => setSearchQuery('')}
-                className="px-2.5 py-1 bg-indigo-500/30 hover:bg-indigo-500/50 text-white font-bold text-[11px] rounded-lg transition"
+                className="px-2.5 py-1 bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0] font-bold text-[11px] rounded-lg transition"
               >
                 Clear Search ✕
               </button>
@@ -418,13 +423,17 @@ export default function Home() {
               {/* Header Title */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <h1 className={`text-xl font-extrabold tracking-tight flex items-center gap-2 ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                     <span>Executive Overview</span>
-                    <span className="text-xs font-normal px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                    <span className={`text-xs font-normal px-2.5 py-0.5 rounded-full border ${
+                      isDark
+                        ? 'bg-[#283925] text-[#e9edc9] border-[#3c5638]'
+                        : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                    }`}>
                       Live Operational Metrics
                     </span>
                   </h1>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]/80' : 'text-[#556b2f]'}`}>
                     Real-time project progress, task allocation & deadline revision metrics
                   </p>
                 </div>
@@ -435,7 +444,11 @@ export default function Home() {
                       setEditingTask(null);
                       setIsTaskModalOpen(true);
                     }}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition"
+                    className={`text-xs font-semibold px-4 py-2 rounded-xl shadow-md flex items-center gap-2 transition ${
+                      isDark
+                        ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
+                        : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
+                    }`}
                   >
                     <PlusCircle className="w-4 h-4" />
                     <span>Create Task</span>
@@ -449,15 +462,19 @@ export default function Home() {
               {/* Project Progress Overview Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Active Projects Progress */}
-                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className={`rounded-2xl p-5 border space-y-4 transition ${
+                  isDark
+                    ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                    : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                }`}>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <FolderKanban className="w-4 h-4 text-indigo-400" />
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                      <FolderKanban className="w-4 h-4 text-[#556b2f]" />
                       <span>Project Completion Progress</span>
                     </h3>
                     <button
                       onClick={() => setActiveTab('projects')}
-                      className="text-xs text-indigo-400 hover:underline font-semibold"
+                      className={`text-xs hover:underline font-semibold ${isDark ? 'text-[#e9edc9]' : 'text-[#385233]'}`}
                     >
                       View All
                     </button>
@@ -465,28 +482,35 @@ export default function Home() {
 
                   <div className="space-y-4">
                     {filteredProjects.map((proj) => (
-                      <div key={proj.id} className="p-3.5 bg-slate-800/50 rounded-xl border border-slate-800 space-y-2">
+                      <div
+                        key={proj.id}
+                        className={`p-3.5 rounded-xl border space-y-2 ${
+                          isDark
+                            ? 'bg-[#283925] border-[#3c5638] text-[#fefae0]'
+                            : 'bg-[#faf8f3] border-[#e2e8f0] text-[#1b2819]'
+                        }`}
+                      >
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-200">{proj.name}</span>
+                          <span className="font-bold">{proj.name}</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-indigo-400 font-bold">
+                            <span className={`font-mono font-bold ${isDark ? 'text-[#e9edc9]' : 'text-[#385233]'}`}>
                               {proj.progress_percentage}%
                             </span>
                             {isAdmin && (
-                              <div className="flex items-center gap-1 pl-2 border-l border-slate-700/80">
+                              <div className={`flex items-center gap-1 pl-2 border-l ${isDark ? 'border-[#3c5638]' : 'border-[#cbd5e1]'}`}>
                                 <button
                                   onClick={() => {
                                     setEditingProject(proj);
                                     setIsProjectModalOpen(true);
                                   }}
-                                  className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition"
+                                  className="p-1 hover:opacity-75 transition"
                                   title="Edit project name & details"
                                 >
                                   <Edit className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => handleDeleteProject(proj.id, proj.name)}
-                                  className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                                  className="p-1 text-rose-500 hover:text-rose-700 transition"
                                   title="Delete project"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -497,18 +521,18 @@ export default function Home() {
                         </div>
 
                         {/* Progress Bar */}
-                        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                        <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-[#141d13]' : 'bg-[#e2e8f0]'}`}>
                           <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-[#386641] to-[#556b2f] transition-all duration-500"
                             style={{ width: `${proj.progress_percentage}%` }}
                           />
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <div className={`flex items-center justify-between text-[11px] pt-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                           <span>
                             Tasks: {proj.completed_tasks} / {proj.total_tasks} completed
                           </span>
-                          <span className="text-slate-500">
+                          <span>
                             {proj.members.length} Team Members
                           </span>
                         </div>
@@ -518,30 +542,46 @@ export default function Home() {
                 </div>
 
                 {/* Priority & Deadline Audit Highlight Card */}
-                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div className={`rounded-2xl p-5 border space-y-4 transition ${
+                  isDark
+                    ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                    : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                }`}>
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <History className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                      <History className="w-4 h-4 text-[#556b2f]" />
                       <span>Deadline Audit Trail Summary</span>
                     </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
+                      isDark
+                        ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
+                        : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                    }`}>
                       Additional Challenge
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                     Whenever a task deadline is adjusted by an admin, TeamSync maintains a complete historical changelog recording previous deadlines, updated deadlines, editor avatars, and justification reasons.
                   </p>
 
-                  <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-800 space-y-3">
+                  <div className={`p-4 rounded-xl border space-y-3 ${
+                    isDark
+                      ? 'bg-[#283925] border-[#3c5638]'
+                      : 'bg-[#faf8f3] border-[#e2e8f0]'
+                  }`}>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 font-medium">Tasks with Revised Deadlines:</span>
-                      <span className="font-bold text-amber-400 text-sm">{stats?.total_deadline_changes || 0}</span>
+                      <span className="font-medium">Tasks with Revised Deadlines:</span>
+                      <span className="font-bold text-sm">{stats?.total_deadline_changes || 0}</span>
                     </div>
 
                     <button
                       onClick={() => setActiveTab('deadline-history')}
-                      className="w-full py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold rounded-xl border border-amber-500/40 flex items-center justify-center gap-2 transition"
+                      className={`w-full py-2.5 text-xs font-semibold rounded-xl border flex items-center justify-center gap-2 transition ${
+                        isDark
+                          ? 'bg-[#3c5638] hover:bg-[#556b2f] text-[#fefae0] border-[#556b2f]'
+                          : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0] border-[#385233]'
+                      }`}
                     >
                       <History className="w-4 h-4" />
                       <span>Explore Full Deadline History Audit Log</span>
@@ -557,17 +597,21 @@ export default function Home() {
             <div className="space-y-6 animate-in fade-in">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-extrabold text-white tracking-tight">
+                  <h1 className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                     Projects Workspace
                   </h1>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                     Create projects, set target end dates, and manage team member access
                   </p>
                 </div>
                 {isAdmin && (
                   <button
                     onClick={() => setIsProjectModalOpen(true)}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition"
+                    className={`text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition ${
+                      isDark
+                        ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
+                        : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
+                    }`}
                   >
                     <FolderKanban className="w-4 h-4" />
                     <span>Create Project</span>
@@ -579,32 +623,42 @@ export default function Home() {
                 {filteredProjects.map((proj) => (
                   <div
                     key={proj.id}
-                    className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl hover:border-slate-700 transition flex flex-col justify-between space-y-4"
+                    className={`rounded-2xl p-5 border flex flex-col justify-between space-y-4 transition ${
+                      isDark
+                        ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                        : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                    }`}
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${proj.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : proj.status === 'PLANNING' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                          proj.status === 'ACTIVE'
+                            ? 'bg-[#386641] text-[#fefae0] border-[#386641]'
+                            : proj.status === 'PLANNING'
+                              ? 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                              : 'bg-[#283925] text-[#e9edc9] border-[#3c5638]'
+                        }`}>
                           {proj.status}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-indigo-400 font-mono">
+                          <span className={`text-xs font-bold font-mono ${isDark ? 'text-[#e9edc9]' : 'text-[#385233]'}`}>
                             {proj.progress_percentage}% Done
                           </span>
                           {isAdmin && (
-                            <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
+                            <div className={`flex items-center gap-1 pl-2 border-l ${isDark ? 'border-[#3c5638]' : 'border-[#cbd5e1]'}`}>
                               <button
                                 onClick={() => {
                                   setEditingProject(proj);
                                   setIsProjectModalOpen(true);
                                 }}
-                                className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition"
+                                className="p-1 hover:opacity-75 transition"
                                 title="Edit project name & details"
                               >
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteProject(proj.id, proj.name)}
-                                className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                                className="p-1 text-rose-500 hover:text-rose-700 transition"
                                 title="Delete project"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -614,29 +668,29 @@ export default function Home() {
                         </div>
                       </div>
 
-                      <h3 className="text-base font-extrabold text-white">{proj.name}</h3>
-                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                      <h3 className="text-base font-extrabold">{proj.name}</h3>
+                      <p className={`text-xs line-clamp-2 leading-relaxed ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                         {proj.description || 'No description provided.'}
                       </p>
                     </div>
 
-                    <div className="space-y-3 pt-3 border-t border-slate-800">
-                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className={`space-y-3 pt-3 border-t ${isDark ? 'border-[#3c5638]' : 'border-[#e2e8f0]'}`}>
+                      <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-[#141d13]' : 'bg-[#e2e8f0]'}`}>
                         <div
-                          className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300"
+                          className="h-full bg-gradient-to-r from-[#386641] to-[#556b2f] transition-all duration-300"
                           style={{ width: `${proj.progress_percentage}%` }}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                      <div className={`flex items-center justify-between text-xs ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                         <div className="flex items-center -space-x-2">
                           {proj.members_detail?.map((m) => (
                             <img
                               key={m.id}
-                              src={m.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.first_name || m.username)}&background=6366f1&color=fff`}
+                              src={m.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.first_name || m.username)}&background=556b2f&color=fefae0`}
                               alt={m.username}
                               title={`${m.first_name || m.username} (${m.role})`}
-                              className="w-6 h-6 rounded-full border-2 border-slate-900 object-cover"
+                              className={`w-6 h-6 rounded-full border-2 object-cover ${isDark ? 'border-[#1f2c1d]' : 'border-white'}`}
                             />
                           ))}
                         </div>
@@ -646,7 +700,7 @@ export default function Home() {
                             setSelectedProjectId(proj.id);
                             setActiveTab('tasks');
                           }}
-                          className="text-xs text-indigo-400 hover:underline font-semibold flex items-center gap-1"
+                          className="text-xs font-semibold flex items-center gap-1 hover:underline"
                         >
                           <span>View Tasks ({proj.total_tasks})</span>
                           <ChevronRight className="w-3 h-3" />
@@ -664,15 +718,17 @@ export default function Home() {
             <div className="space-y-6 animate-in fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <h1 className={`text-xl font-extrabold tracking-tight flex items-center gap-2 ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                     <span>Task Management</span>
                     {selectedProjectId && (
-                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                        isDark ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]' : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                      }`}>
                         Filtered: {projects.find((p) => p.id === selectedProjectId)?.name}
                       </span>
                     )}
                   </h1>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                     View assigned tasks, update status, track deadlines & post comments
                   </p>
                 </div>
@@ -680,7 +736,13 @@ export default function Home() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setAssignedToMeFilter(!assignedToMeFilter)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${assignedToMeFilter ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${
+                      assignedToMeFilter
+                        ? 'bg-[#556b2f] text-[#fefae0] border-[#556b2f]'
+                        : isDark
+                          ? 'bg-[#1f2c1d] text-[#e9edc9] border-[#3c5638] hover:bg-[#283925]'
+                          : 'bg-white text-[#1b2819] border-[#d4ddcf] hover:bg-[#e9edc9]'
+                    }`}
                   >
                     <UserCheck className="w-3.5 h-3.5" />
                     <span>My Tasks Only</span>
@@ -692,7 +754,11 @@ export default function Home() {
                         setEditingTask(null);
                         setIsTaskModalOpen(true);
                       }}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition"
+                      className={`text-xs font-semibold px-4 py-2 rounded-xl shadow-md flex items-center gap-2 transition ${
+                        isDark
+                          ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
+                          : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
+                      }`}
                     >
                       <PlusCircle className="w-4 h-4" />
                       <span>Create Task</span>
@@ -702,8 +768,12 @@ export default function Home() {
               </div>
 
               {/* Task Filters Bar */}
-              <div className="flex items-center gap-3 flex-wrap bg-slate-900/60 p-3 rounded-2xl border border-slate-800 text-xs">
-                <div className="flex items-center gap-1.5 text-slate-400">
+              <div className={`flex items-center gap-3 flex-wrap p-3 rounded-2xl border text-xs ${
+                isDark
+                  ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                  : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+              }`}>
+                <div className={`flex items-center gap-1.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                   <Filter className="w-3.5 h-3.5" />
                   <span className="font-semibold">Filters:</span>
                 </div>
@@ -711,7 +781,11 @@ export default function Home() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 border border-slate-700 focus:outline-none"
+                  className={`text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${
+                    isDark
+                      ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                      : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                  }`}
                 >
                   <option value="">All Statuses</option>
                   <option value="TODO">To Do</option>
@@ -723,7 +797,11 @@ export default function Home() {
                 <select
                   value={priorityFilter}
                   onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-1.5 border border-slate-700 focus:outline-none"
+                  className={`text-xs rounded-xl px-3 py-1.5 border focus:outline-none ${
+                    isDark
+                      ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                      : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                  }`}
                 >
                   <option value="">All Priorities</option>
                   <option value="LOW">Low</option>
@@ -740,7 +818,7 @@ export default function Home() {
                       setAssignedToMeFilter(false);
                       setSelectedProjectId(null);
                     }}
-                    className="text-[11px] text-rose-400 hover:underline font-semibold ml-auto"
+                    className="text-[11px] text-rose-500 hover:underline font-semibold ml-auto"
                   >
                     Clear All Filters
                   </button>
@@ -750,10 +828,14 @@ export default function Home() {
               {/* Tasks List */}
               <div className="space-y-3">
                 {filteredTasks.length === 0 ? (
-                  <div className="p-12 text-center bg-slate-900/50 rounded-2xl border border-slate-800">
-                    <CheckSquare className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-slate-300">No tasks found matching criteria</p>
-                    <p className="text-xs text-slate-500 mt-1">Try resetting filters or create a new task</p>
+                  <div className={`p-12 text-center rounded-2xl border ${
+                    isDark
+                      ? 'bg-[#1f2c1d] border-[#3c5638] text-[#e9edc9]'
+                      : 'bg-white border-[#d4ddcf] text-[#556b2f] shadow-sm'
+                  }`}>
+                    <CheckSquare className="w-8 h-8 opacity-50 mx-auto mb-2" />
+                    <p className="text-sm font-semibold">No tasks found matching criteria</p>
+                    <p className="text-xs opacity-75 mt-1">Try resetting filters or create a new task</p>
                   </div>
                 ) : (
                   filteredTasks.map((t) => {
@@ -761,7 +843,11 @@ export default function Home() {
                     return (
                       <div
                         key={t.id}
-                        className="bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 transition shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4"
+                        className={`rounded-2xl p-4 transition border shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                          isDark
+                            ? 'bg-[#1f2c1d] border-[#3c5638] hover:border-[#556b2f] text-[#fefae0]'
+                            : 'bg-white border-[#d4ddcf] hover:border-[#385233] text-[#1b2819]'
+                        }`}
                       >
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           {/* Completion Checkbox */}
@@ -773,17 +859,23 @@ export default function Home() {
                             }}
                             className={`w-6 h-6 rounded-lg border flex items-center justify-center transition shrink-0 mt-0.5 ${
                               t.status === 'COMPLETED'
-                                ? 'bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-500/30'
-                                : 'bg-slate-800/80 border-slate-700 text-transparent hover:border-emerald-500 hover:text-emerald-400/50'
+                                ? 'bg-[#386641] border-[#386641] text-white shadow'
+                                : isDark
+                                  ? 'bg-[#141d13] border-[#3c5638] text-transparent hover:border-[#556b2f]'
+                                  : 'bg-white border-[#d4ddcf] text-transparent hover:border-[#385233]'
                             }`}
                             title={t.status === 'COMPLETED' ? 'Mark as In Progress' : 'Mark Task as Completed'}
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className="w-4 h-4 text-white" />
                           </button>
 
                           <div className="space-y-1.5 flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                isDark
+                                  ? 'bg-[#141d13] text-[#e9edc9] border-[#3c5638]'
+                                  : 'bg-[#faf8f3] text-[#1b2819] border-[#d4ddcf]'
+                              }`}>
                                 {t.project_name || `Project #${t.project}`}
                               </span>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${priorityBadge[t.priority]}`}>
@@ -797,52 +889,68 @@ export default function Home() {
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded border focus:outline-none cursor-pointer ${statusBadge[t.status]}`}
                                 title="Click to update task progress status"
                               >
-                                <option value="TODO" className="bg-slate-900 text-slate-300 font-sans">To Do</option>
-                                <option value="IN_PROGRESS" className="bg-slate-900 text-blue-300 font-sans">In Progress</option>
-                                <option value="IN_REVIEW" className="bg-slate-900 text-purple-300 font-sans">In Review</option>
-                                <option value="COMPLETED" className="bg-slate-900 text-emerald-300 font-sans">Completed ✓</option>
+                                <option value="TODO">To Do</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="IN_REVIEW">In Review</option>
+                                <option value="COMPLETED">Completed ✓</option>
                               </select>
                             </div>
 
                             <button
                               onClick={() => openTaskDetail(t)}
-                              className={`text-left font-bold text-sm hover:text-indigo-300 transition truncate block ${t.status === 'COMPLETED' ? 'text-slate-400 line-through' : 'text-white'}`}
+                              className={`text-left font-bold text-sm transition truncate block hover:underline ${
+                                t.status === 'COMPLETED'
+                                  ? 'line-through opacity-60'
+                                  : isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'
+                              }`}
                             >
                               {t.title}
                             </button>
 
-                            <p className="text-xs text-slate-400 line-clamp-1">
+                            <p className={`text-xs line-clamp-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                               {t.description || 'No description provided.'}
                             </p>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-4 text-xs shrink-0 flex-wrap">
-                          <div className="flex items-center gap-2 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/60">
+                          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
+                            isDark
+                              ? 'bg-[#283925] border-[#3c5638] text-[#fefae0]'
+                              : 'bg-[#faf8f3] border-[#e2e8f0] text-[#1b2819]'
+                          }`}>
                             {assignee ? (
                               <>
                                 <img
-                                  src={assignee.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(assignee.first_name || assignee.username)}&background=3b82f6&color=fff`}
+                                  src={assignee.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(assignee.first_name || assignee.username)}&background=556b2f&color=fefae0`}
                                   alt="assignee"
                                   className="w-5 h-5 rounded-full object-cover"
                                 />
-                                <span className="font-semibold text-slate-200 text-xs">
+                                <span className="font-semibold text-xs">
                                   {assignee.first_name ? `${assignee.first_name} ${assignee.last_name}` : assignee.username}
                                 </span>
                               </>
                             ) : (
-                              <span className="text-slate-500 italic text-xs">Unassigned</span>
+                              <span className="opacity-60 italic text-xs">Unassigned</span>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-slate-300 font-medium bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/60">
-                            <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                          <div className={`flex items-center gap-1.5 font-medium px-3 py-1.5 rounded-xl border ${
+                            isDark
+                              ? 'bg-[#283925] border-[#3c5638] text-[#fefae0]'
+                              : 'bg-[#faf8f3] border-[#e2e8f0] text-[#1b2819]'
+                          }`}>
+                            <Calendar className="w-3.5 h-3.5 text-[#556b2f]" />
                             <span>{formatDate(t.deadline)}</span>
                           </div>
 
                           <button
                             onClick={() => openDeadlineHistoryModal(t)}
-                            className="p-2 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl border border-amber-500/30 font-semibold text-xs flex items-center gap-1 transition"
+                            className={`p-2 rounded-xl border font-semibold text-xs flex items-center gap-1 transition ${
+                              isDark
+                                ? 'bg-[#3c5638] hover:bg-[#556b2f] text-[#fefae0] border-[#556b2f]'
+                                : 'bg-[#e9edc9] hover:bg-[#385233] hover:text-[#fefae0] text-[#1b2819] border-[#d4ddcf]'
+                            }`}
                             title="View Deadline Change History"
                           >
                             <History className="w-3.5 h-3.5" />
@@ -851,27 +959,31 @@ export default function Home() {
 
                           <button
                             onClick={() => openTaskDetail(t)}
-                            className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 font-semibold text-xs flex items-center gap-1 transition"
+                            className={`p-2 rounded-xl border font-semibold text-xs flex items-center gap-1 transition ${
+                              isDark
+                                ? 'bg-[#283925] hover:bg-[#3c5638] text-[#fefae0] border-[#3c5638]'
+                                : 'bg-[#faf8f3] hover:bg-[#e2e8f0] text-[#1b2819] border-[#d4ddcf]'
+                            }`}
                           >
-                            <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                            <MessageSquare className="w-3.5 h-3.5 text-[#556b2f]" />
                             <span>{t.comments_count}</span>
                           </button>
 
                           {isAdmin && (
-                            <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
+                            <div className={`flex items-center gap-1 pl-2 border-l ${isDark ? 'border-[#3c5638]' : 'border-[#cbd5e1]'}`}>
                               <button
                                 onClick={() => {
                                   setEditingTask(t);
                                   setIsTaskModalOpen(true);
                                 }}
-                                className="p-1.5 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition"
+                                className="p-1.5 hover:opacity-75 transition"
                                 title="Edit Task & Deadline"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDeleteTask(t.id)}
-                                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                                className="p-1.5 text-rose-500 hover:text-rose-700 transition"
                                 title="Delete Task"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -893,30 +1005,42 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-extrabold text-white tracking-tight">
+                    <h1 className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                       Deadline Audit Trail
                     </h1>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border uppercase ${
+                      isDark
+                        ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
+                        : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                    }`}>
                       Additional Challenge Requirement
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                     Complete historical tracking of all previous and updated deadlines across tasks
                   </p>
                 </div>
               </div>
 
-              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-                <p className="text-xs text-slate-300 leading-relaxed">
+              <div className={`rounded-2xl p-6 border space-y-4 shadow-xl transition ${
+                isDark
+                  ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                  : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+              }`}>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                   Select any task from below to view its chronological deadline revision log, including editor profile, old vs new date timestamps, and change justification.
                 </p>
 
                 <div className="space-y-3">
                   {tasks.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-800/40 rounded-xl border border-slate-800">
-                      <History className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                      <p className="text-sm font-semibold text-slate-300">No tasks created yet</p>
-                      <p className="text-xs text-slate-500 mt-1">Create tasks to track deadline revision history.</p>
+                    <div className={`p-8 text-center rounded-xl border ${
+                      isDark
+                        ? 'bg-[#283925] border-[#3c5638] text-[#e9edc9]'
+                        : 'bg-[#faf8f3] border-[#e2e8f0] text-[#556b2f]'
+                    }`}>
+                      <History className="w-8 h-8 opacity-50 mx-auto mb-2" />
+                      <p className="text-sm font-semibold">No tasks created yet</p>
+                      <p className="text-xs opacity-75 mt-1">Create tasks to track deadline revision history.</p>
                     </div>
                   ) : (
                     tasks.map((t) => {
@@ -924,25 +1048,41 @@ export default function Home() {
                       return (
                         <div
                           key={t.id}
-                          className="p-4 bg-slate-800/60 border border-slate-800 hover:border-amber-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition"
+                          className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition ${
+                            isDark
+                              ? 'bg-[#283925] border-[#3c5638] text-[#fefae0]'
+                              : 'bg-[#faf8f3] border-[#e2e8f0] text-[#1b2819]'
+                          }`}
                         >
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-700">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                isDark
+                                  ? 'bg-[#141d13] text-[#e9edc9] border-[#3c5638]'
+                                  : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                              }`}>
                                 {t.project_name || `Project #${t.project}`}
                               </span>
                               {hasRevisions ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                  isDark
+                                    ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
+                                    : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                                }`}>
                                   ⚡ {t.deadline_history_count} Revisions Logged
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                                  isDark
+                                    ? 'bg-[#141d13] text-[#e9edc9] border-[#3c5638]'
+                                    : 'bg-white text-[#556b2f] border-[#d4ddcf]'
+                                }`}>
                                   Initial Deadline
                                 </span>
                               )}
                             </div>
-                            <h4 className="font-bold text-sm text-white">{t.title}</h4>
-                            <p className="text-xs text-amber-400 font-medium">
+                            <h4 className="font-bold text-sm">{t.title}</h4>
+                            <p className={`text-xs font-medium ${isDark ? 'text-[#e9edc9]' : 'text-[#385233]'}`}>
                               Current Deadline: {formatDate(t.deadline)}
                             </p>
                           </div>
@@ -954,10 +1094,14 @@ export default function Home() {
                                   setEditingTask(t);
                                   setIsTaskModalOpen(true);
                                 }}
-                                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition"
+                                className={`px-3.5 py-2 font-semibold text-xs rounded-xl border flex items-center gap-1.5 transition ${
+                                  isDark
+                                    ? 'bg-[#141d13] hover:bg-[#3c5638] text-[#fefae0] border-[#3c5638]'
+                                    : 'bg-white hover:bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                                }`}
                                 title="Update Task Deadline & Record Audit Reason"
                               >
-                                <Edit className="w-3.5 h-3.5 text-indigo-400" />
+                                <Edit className="w-3.5 h-3.5 text-[#556b2f]" />
                                 <span>Update Deadline</span>
                               </button>
                             )}
@@ -965,11 +1109,15 @@ export default function Home() {
                               onClick={() => openDeadlineHistoryModal(t)}
                               className={`px-4 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 transition ${
                                 hasRevisions
-                                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40 shadow-sm'
-                                  : 'bg-slate-800 hover:bg-slate-700/80 text-slate-300 border-slate-700'
+                                  ? isDark
+                                    ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0] border-[#556b2f]'
+                                    : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0] border-[#385233]'
+                                  : isDark
+                                    ? 'bg-[#141d13] text-[#e9edc9] border-[#3c5638]'
+                                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
                               }`}
                             >
-                              <History className="w-4 h-4 text-amber-400" />
+                              <History className="w-4 h-4" />
                               <span>View Audit Log ({t.deadline_history_count})</span>
                             </button>
                           </div>
@@ -987,13 +1135,17 @@ export default function Home() {
             <div className="space-y-6 animate-in fade-in">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  <h1 className={`text-xl font-extrabold tracking-tight flex items-center gap-2 ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                     <span>Project Invitations & Requests</span>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border font-mono ${
+                      isDark
+                        ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
+                        : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+                    }`}>
                       {invitations.filter((inv) => inv.status === 'PENDING').length} Pending
                     </span>
                   </h1>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                     Admin invitations to join projects. Accept requests to participate in project tasks & workflows.
                   </p>
                 </div>
@@ -1001,10 +1153,14 @@ export default function Home() {
 
               <div className="space-y-4">
                 {invitations.length === 0 ? (
-                  <div className="p-12 text-center bg-slate-900/50 rounded-2xl border border-slate-800 space-y-2">
-                    <Mail className="w-8 h-8 text-slate-600 mx-auto" />
-                    <p className="text-sm font-semibold text-slate-300">No Project Requests Found</p>
-                    <p className="text-xs text-slate-500">
+                  <div className={`p-12 text-center rounded-2xl border space-y-2 ${
+                    isDark
+                      ? 'bg-[#1f2c1d] border-[#3c5638] text-[#e9edc9]'
+                      : 'bg-white border-[#d4ddcf] text-[#556b2f] shadow-sm'
+                  }`}>
+                    <Mail className="w-8 h-8 opacity-50 mx-auto" />
+                    <p className="text-sm font-semibold">No Project Requests Found</p>
+                    <p className="text-xs opacity-75">
                       When an Admin invites you to join a project, the request will appear here for your approval.
                     </p>
                   </div>
@@ -1019,26 +1175,40 @@ export default function Home() {
                     return (
                       <div
                         key={inv.id}
-                        className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition"
+                        className={`rounded-2xl p-5 border flex flex-col md:flex-row md:items-center justify-between gap-4 transition ${
+                          isDark
+                            ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                            : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                        }`}
                       >
                         <div className="space-y-2 flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${isPending ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse' : isAccepted ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                              isPending
+                                ? 'bg-[#556b2f] text-[#fefae0] border-[#e9edc9] animate-pulse'
+                                : isAccepted
+                                  ? 'bg-[#386641] text-[#fefae0] border-[#386641]'
+                                  : 'bg-rose-900/60 text-rose-200 border-rose-700'
+                            }`}>
                               {inv.status}
                             </span>
-                            <span className="text-xs text-slate-400 font-mono">
+                            <span className={`text-xs font-mono ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                               Received: {new Date(inv.created_at).toLocaleString()}
                             </span>
                           </div>
 
-                          <h3 className="text-base font-extrabold text-white">
+                          <h3 className="text-base font-extrabold">
                             {project?.name || `Project #${inv.project}`}
                           </h3>
-                          <p className="text-xs text-slate-400">
-                            Invited by <strong className="text-slate-200">{sender?.first_name ? `${sender.first_name} ${sender.last_name}` : sender?.username || 'Admin'}</strong> ({sender?.email})
+                          <p className={`text-xs ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
+                            Invited by <strong className="font-bold">{sender?.first_name ? `${sender.first_name} ${sender.last_name}` : sender?.username || 'Admin'}</strong> ({sender?.email})
                           </p>
                           {inv.message && (
-                            <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-800 text-xs text-slate-300 italic">
+                            <div className={`p-3 rounded-xl border text-xs italic ${
+                              isDark
+                                ? 'bg-[#283925] border-[#3c5638] text-[#e9edc9]'
+                                : 'bg-[#faf8f3] border-[#e2e8f0] text-[#1b2819]'
+                            }`}>
                               &quot;{inv.message}&quot;
                             </div>
                           )}
@@ -1049,14 +1219,14 @@ export default function Home() {
                             <>
                               <button
                                 onClick={() => handleRespondInvitation(inv.id, 'reject')}
-                                className="px-4 py-2.5 bg-slate-800 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                                className="px-4 py-2.5 bg-rose-950 hover:bg-rose-900 text-rose-200 border border-rose-800 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                               >
                                 <XCircle className="w-4 h-4" />
                                 <span>Reject Request</span>
                               </button>
                               <button
                                 onClick={() => handleRespondInvitation(inv.id, 'accept')}
-                                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 transition flex items-center gap-1.5"
+                                className="px-5 py-2.5 bg-[#386641] hover:bg-[#556b2f] text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center gap-1.5"
                               >
                                 <CheckCircle className="w-4 h-4" />
                                 <span>Accept & Join Project</span>
@@ -1064,12 +1234,12 @@ export default function Home() {
                             </>
                           )}
                           {isAccepted && (
-                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                            <span className="text-xs font-bold text-[#a3b18a] flex items-center gap-1.5 px-3 py-1.5 bg-[#386641]/20 rounded-xl border border-[#386641]">
                               <CheckCircle className="w-4 h-4" /> Joined Project
                             </span>
                           )}
                           {isRejected && (
-                            <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                            <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/40 rounded-xl border border-rose-800">
                               <XCircle className="w-4 h-4" /> Request Rejected
                             </span>
                           )}
@@ -1087,17 +1257,21 @@ export default function Home() {
             <div className="space-y-6 animate-in fade-in">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-extrabold text-white tracking-tight">
+                  <h1 className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                     Team Directory
                   </h1>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                     Team members, roles, departments, and onboarding
                   </p>
                 </div>
                 {isAdmin && (
                   <button
                     onClick={() => setIsTeamModalOpen(true)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition"
+                    className={`text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition ${
+                      isDark
+                        ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
+                        : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
+                    }`}
                   >
                     <Users className="w-4 h-4" />
                     <span>Add Team Member</span>
@@ -1109,20 +1283,32 @@ export default function Home() {
                 {allUsers.map((u) => (
                   <div
                     key={u.id}
-                    className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-start gap-3"
+                    className={`rounded-2xl p-5 border flex items-start gap-3 transition ${
+                      isDark
+                        ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                        : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                    }`}
                   >
                     <img
-                      src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name || u.username)}&background=6366f1&color=fff`}
+                      src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name || u.username)}&background=556b2f&color=fefae0`}
                       alt={u.username}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/30"
+                      className="w-10 h-10 rounded-full object-cover ring-2 ring-[#556b2f]/40"
                     />
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-sm text-white">
+                        <h4 className="font-bold text-sm">
                           {u.first_name ? `${u.first_name} ${u.last_name}` : u.username}
                         </h4>
                         <div className="flex items-center gap-1">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${u.role === 'ADMIN' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'}`}>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                            u.role === 'ADMIN'
+                              ? isDark
+                                ? 'bg-[#fefae0] text-[#141d13] border-[#fefae0]'
+                                : 'bg-[#1b2819] text-[#fefae0] border-[#1b2819]'
+                              : isDark
+                                ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
+                                : 'bg-[#e9edc9] text-[#1b2819] border-[#385233]'
+                          }`}>
                             {u.role}
                           </span>
                           {(isAdmin || u.id === user?.id) && (
@@ -1131,7 +1317,7 @@ export default function Home() {
                                 setSelectedUserForEdit(u);
                                 setIsProfileModalOpen(true);
                               }}
-                              className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-md transition"
+                              className="p-1 hover:opacity-75 transition"
                               title="Edit user profile info (email, name, role, department)"
                             >
                               <Edit className="w-3.5 h-3.5" />
@@ -1139,16 +1325,20 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-slate-400 font-mono">{u.email}</p>
-                      <p className="text-[11px] text-slate-500 mb-2">{u.department || 'General'}</p>
+                      <p className={`text-xs font-mono ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>{u.email}</p>
+                      <p className={`text-[11px] mb-2 ${isDark ? 'text-[#e9edc9]/80' : 'text-[#556b2f]'}`}>{u.department || 'General'}</p>
 
                       {/* Admin Project Request Controls */}
                       {isAdmin && u.id !== user?.id && (
-                        <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                        <div className={`pt-2 border-t space-y-2 ${isDark ? 'border-[#3c5638]' : 'border-[#e2e8f0]'}`}>
                           <div className="flex items-center gap-1.5 text-[11px]">
                             <select
                               id={`project-select-${u.id}`}
-                              className="bg-slate-800 text-slate-200 text-[11px] rounded-lg px-2 py-1 border border-slate-700 focus:outline-none flex-1"
+                              className={`text-[11px] rounded-lg px-2 py-1 border focus:outline-none flex-1 ${
+                                isDark
+                                  ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                                  : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                              }`}
                               defaultValue={projects[0]?.id || ''}
                             >
                               {projects.map((p) => (
@@ -1165,7 +1355,11 @@ export default function Home() {
                                   handleSendProjectInvitation(projId, u.id);
                                 }
                               }}
-                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-lg transition shadow"
+                              className={`px-2.5 py-1 font-bold text-[10px] rounded-lg transition shadow ${
+                                isDark
+                                  ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
+                                  : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
+                              }`}
                               title="Send invitation request to join project"
                             >
                               Send Request
@@ -1176,14 +1370,18 @@ export default function Home() {
                           {invitations
                             .filter((inv) => inv.invited_user === u.id)
                             .map((inv) => (
-                              <div key={inv.id} className="flex items-center justify-between text-[10px] bg-slate-800/40 px-2 py-1 rounded border border-slate-800">
-                                <span className="text-slate-400 truncate">{inv.project_detail?.name}:</span>
-                                {inv.status === 'PENDING' && <span className="font-bold text-amber-400">⌛ Pending</span>}
-                                {inv.status === 'ACCEPTED' && <span className="font-bold text-emerald-400">✅ Joined</span>}
+                              <div key={inv.id} className={`flex items-center justify-between text-[10px] px-2 py-1 rounded border ${
+                                isDark
+                                  ? 'bg-[#141d13] border-[#3c5638]'
+                                  : 'bg-[#faf8f3] border-[#e2e8f0]'
+                              }`}>
+                                <span className="truncate opacity-75">{inv.project_detail?.name}:</span>
+                                {inv.status === 'PENDING' && <span className="font-bold text-amber-500">⌛ Pending</span>}
+                                {inv.status === 'ACCEPTED' && <span className="font-bold text-[#386641]">✅ Joined</span>}
                                 {inv.status === 'REJECTED' && (
                                   <button
                                     onClick={() => handleSendProjectInvitation(inv.project, u.id)}
-                                    className="font-bold text-rose-400 hover:underline cursor-pointer"
+                                    className="font-bold text-rose-500 hover:underline cursor-pointer"
                                     title="Click to re-send invitation request"
                                   >
                                     ❌ Rejected (Re-send)
@@ -1262,13 +1460,19 @@ export default function Home() {
       />
 
       {/* GLOBAL FOOTER WITH COPYRIGHT */}
-      <footer className="mt-auto bg-[#1a2618] border-t border-[#3c5638] py-4 px-6 text-center text-xs text-[#e9edc9]">
+      <footer className={`mt-auto border-t py-4 px-6 text-center text-xs transition-colors ${
+        isDark
+          ? 'bg-[#1a2618] border-[#3c5638] text-[#e9edc9]'
+          : 'bg-[#faf8f3] border-[#d4ddcf] text-[#1b2819]'
+      }`}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-[#fefae0]">TeamSync Platform</span>
-            <span className="text-[10px] bg-[#3c5638] px-2 py-0.5 rounded text-[#fefae0] font-mono font-bold">v10.0</span>
+            <span className="font-extrabold">TeamSync Platform</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+              isDark ? 'bg-[#3c5638] text-[#fefae0]' : 'bg-[#e9edc9] text-[#1b2819]'
+            }`}>v11.0</span>
           </div>
-          <p className="font-semibold text-[#fefae0]">
+          <p className="font-semibold">
             Copyright © 2026 Rajkumar PR. All Rights Reserved.
           </p>
         </div>
