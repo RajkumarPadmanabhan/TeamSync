@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       setError(null);
-      await api.createUser(userData);
+      await api.registerUser(userData);
       await refreshUsers();
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
