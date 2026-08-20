@@ -90,12 +90,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
     }
   };
 
-  const fillQuickCredentials = (u: string, p: string) => {
-    setLoginUsername(u);
-    setLoginPassword(p);
-    setError(null);
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
       {/* Background Glow Overlay */}
@@ -229,7 +223,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
               <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
-                  onClick={() => fillQuickCredentials('admin', 'password123')}
                   className="p-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 flex items-center justify-center gap-2 transition shadow-sm"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -255,7 +248,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
 
                 <button
                   type="button"
-                  onClick={() => fillQuickCredentials('alice', 'password123')}
                   className="p-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 flex items-center justify-center gap-2 transition shadow-sm"
                 >
                   <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
