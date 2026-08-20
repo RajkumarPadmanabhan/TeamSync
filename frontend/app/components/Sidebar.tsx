@@ -10,9 +10,7 @@ import {
   PlusCircle,
   ShieldAlert,
   ChevronRight,
-  Mail,
-  Sun,
-  Moon
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -42,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingRequestsCount = 0,
 }) => {
   const { isAdmin } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const navItems = [
@@ -190,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Role Footer Info & Theme Toggle */}
+      {/* Role Footer Info */}
       <div className={`pt-4 border-t mt-6 space-y-3 ${isDark ? 'border-[#3c5638]' : 'border-[#d4ddcf]'}`}>
         <div className={`p-2.5 rounded-xl border flex items-center gap-2 text-[11px] ${
           isDark
@@ -211,28 +209,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
           </div>
         </div>
-
-        {/* Theme Toggle Button inside Sidebar */}
-        <button
-          onClick={toggleTheme}
-          className={`w-full py-2 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 ${
-            isDark
-              ? 'bg-[#283925] hover:bg-[#3c5638] text-[#fefae0] border-[#3c5638]'
-              : 'bg-white hover:bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
-          }`}
-        >
-          {isDark ? (
-            <>
-              <Sun className="w-4 h-4 text-amber-300" />
-              <span>Switch to Light Mode</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4 text-[#385233]" />
-              <span>Switch to Dark Mode</span>
-            </>
-          )}
-        </button>
 
         <div className={`text-[10px] text-center font-medium ${isDark ? 'text-[#e9edc9]/90' : 'text-[#556b2f]'}`}>
           Copyright © 2026 Rajkumar PR.<br/>All Rights Reserved.
