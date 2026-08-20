@@ -58,6 +58,7 @@ export default function Home() {
 
   // Modals state
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isDeadlineModalOpen, setIsDeadlineModalOpen] = useState(false);
@@ -157,8 +158,6 @@ export default function Home() {
   }
 
   // Handle Project Creation or Update
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-
   const handleSaveProject = async (data: any) => {
     if (data.id) {
       await api.updateProject(data.id, data);
