@@ -14,9 +14,10 @@ interface NavbarProps {
   onRefresh?: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  openEditProfileModal?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearchQuery }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearchQuery, openEditProfileModal }) => {
   const { user, logout, isAdmin, loading } = useAuth();
 
   return (
@@ -73,7 +74,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearc
           {/* Active User Badge & Role Tag */}
           {user && (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/80">
+              <div
+                onClick={openEditProfileModal}
+                className="flex items-center gap-2.5 bg-slate-800/80 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700/80 cursor-pointer transition"
+                title="Click to edit profile info (email, name, role, department)"
+              >
                 <img
                   src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name || user.username)}&background=3b82f6&color=fff`}
                   alt={user.username}

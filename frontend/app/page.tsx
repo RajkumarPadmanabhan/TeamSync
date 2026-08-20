@@ -14,6 +14,7 @@ import { TaskDetailModal } from './components/TaskDetailModal';
 import { TeamRosterModal } from './components/TeamRosterModal';
 import { AuthScreen } from './components/AuthScreen';
 import { InvitationsBanner } from './components/InvitationsBanner';
+import { UserProfileModal } from './components/UserProfileModal';
 import {
   PlusCircle,
   FolderKanban,
@@ -64,6 +65,22 @@ export default function Home() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTaskForDetail, setSelectedTaskForDetail] = useState<Task | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
+
+  const handleSaveUserProfile = async (data: any) => {
+    try {
+      if (data.id === user?.id) {
+        await api.updateProfile(data);
+      } else if (data.id) {
+        await api.updateUser(data.id, data);
+      }
+      await refreshUsers();
+      await loadAllData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update user profile.');
+    }
+  };
 
   // Filters for tasks
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -273,6 +290,10 @@ export default function Home() {
         onRefresh={loadAllData}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        openEditProfileModal={() => {
+          setSelectedUserForEdit(user);
+          setIsProfileModalOpen(true);
+        }}
       />
 
       {/* Main Layout Area */}
@@ -978,9 +999,23 @@ export default function Home() {
                         <h4 className="font-bold text-sm text-white">
                           {u.first_name ? `${u.first_name} ${u.last_name}` : u.username}
                         </h4>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${u.role === 'ADMIN' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'}`}>
-                          {u.role}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${u.role === 'ADMIN' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'}`}>
+                            {u.role}
+                          </span>
+                          {(isAdmin || u.id === user?.id) && (
+                            <button
+                              onClick={() => {
+                                setSelectedUserForEdit(u);
+                                setIsProfileModalOpen(true);
+                              }}
+                              className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-md transition"
+                              title="Edit user profile info (email, name, role, department)"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs text-slate-400 font-mono">{u.email}</p>
                       <p className="text-[11px] text-slate-500 mb-2">{u.department || 'General'}</p>
@@ -1086,6 +1121,16 @@ export default function Home() {
         isOpen={isTeamModalOpen}
         onClose={() => setIsTeamModalOpen(false)}
         onSubmit={handleCreateUser}
+      />
+
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setSelectedUserForEdit(null);
+        }}
+        user={selectedUserForEdit}
+        onSave={handleSaveUserProfile}
       />
     </div>
   );
