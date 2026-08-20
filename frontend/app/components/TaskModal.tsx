@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Task, Project, User, TaskPriority, TaskStatus } from '../types';
+import { useTheme } from '../context/ThemeContext';
 import { CheckSquare, X, Calendar, UserCheck, AlertTriangle, MessageSquare } from 'lucide-react';
 
 interface TaskModalProps {
@@ -23,6 +24,9 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   initialTask,
   defaultProjectId,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [projectId, setProjectId] = useState<number | ''>('');
@@ -101,26 +105,34 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden text-slate-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+      <div className={`border rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden transition-colors ${
+        isDark ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]' : 'bg-white border-[#d4ddcf] text-[#1b2819]'
+      }`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${
+          isDark ? 'border-[#3c5638] bg-[#141d13]/50' : 'border-[#e2e8f0] bg-[#faf8f3]'
+        }`}>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            <div className={`p-2 rounded-xl border ${
+              isDark ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]' : 'bg-[#e9edc9] text-[#1b2819] border-[#d4ddcf]'
+            }`}>
               <CheckSquare className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-white">
+              <h3 className="text-base font-extrabold">
                 {initialTask ? 'Edit Task & Update Deadline' : 'Create New Task'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className={`text-xs ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
                 Assign tasks to team members & set priorities/deadlines
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+            className={`p-1.5 rounded-lg transition ${
+              isDark ? 'text-[#e9edc9] hover:text-white hover:bg-[#3c5638]' : 'text-[#556b2f] hover:text-black hover:bg-[#e2e8f0]'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -129,14 +141,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {error && (
-            <div className="p-3 text-xs bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-xl">
+            <div className="p-3 text-xs bg-rose-500/20 text-rose-600 border border-rose-400 rounded-xl">
               {error}
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Task Title <span className="text-rose-400">*</span>
+            <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
+              Task Title <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -144,12 +156,16 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               placeholder="e.g. Design REST API Authentication Schemas"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-xl px-3.5 py-2.5 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${
+                isDark
+                  ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                  : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+              }`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
+            <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
               Description
             </label>
             <textarea
@@ -157,20 +173,28 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               placeholder="Provide complete task specifications, instructions, or acceptance criteria..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-xl px-3.5 py-2.5 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border focus:outline-none ${
+                isDark
+                  ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                  : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+              }`}
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Project <span className="text-rose-400">*</span>
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
+                Project <span className="text-rose-500">*</span>
               </label>
               <select
                 required
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${
+                  isDark
+                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                }`}
               >
                 <option value="">Select Project</option>
                 {projects.map((p) => (
@@ -182,13 +206,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
                 Assign To Team Member
               </label>
               <select
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${
+                  isDark
+                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                }`}
               >
                 <option value="">Unassigned</option>
                 {users.map((u) => (
@@ -202,13 +230,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${
+                  isDark
+                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                }`}
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
@@ -218,13 +250,17 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
                 Status
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={`w-full text-xs rounded-xl px-3 py-2.5 border focus:outline-none ${
+                  isDark
+                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                }`}
               >
                 <option value="TODO">To Do</option>
                 <option value="IN_PROGRESS">In Progress</option>
@@ -234,26 +270,32 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className={`block text-xs font-semibold mb-1 ${isDark ? 'text-[#e9edc9]' : 'text-[#1b2819]'}`}>
                 Deadline Date & Time
               </label>
               <input
                 type="datetime-local"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className={`w-full text-xs rounded-xl px-3 py-2 border focus:outline-none ${
+                  isDark
+                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                }`}
               />
             </div>
           </div>
 
           {/* Deadline Reason Alert if Deadline changed */}
           {isEditingDeadline && (
-            <div className="p-3.5 bg-amber-500/15 border border-amber-500/30 rounded-xl space-y-2 animate-in fade-in">
-              <div className="flex items-center gap-2 text-amber-300 text-xs font-bold">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
+            <div className={`p-3.5 border rounded-xl space-y-2 animate-in fade-in ${
+              isDark ? 'bg-[#556b2f]/20 border-[#556b2f] text-[#fefae0]' : 'bg-[#e9edc9] border-[#385233] text-[#1b2819]'
+            }`}>
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
                 <span>Deadline Revision Detected</span>
               </div>
-              <p className="text-[11px] text-amber-200/80">
+              <p className="text-[11px] opacity-80">
                 The system will log a permanent audit record of this deadline change in the Deadline Audit Trail.
               </p>
               <input
@@ -261,24 +303,36 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 placeholder="Enter reason for deadline change (e.g., Client request, extended audit)..."
                 value={deadlineReason}
                 onChange={(e) => setDeadlineReason(e.target.value)}
-                className="w-full bg-slate-900/80 text-amber-100 placeholder-amber-400/50 text-xs rounded-lg px-3 py-2 border border-amber-500/40 focus:outline-none"
+                className={`w-full text-xs rounded-lg px-3 py-2 border focus:outline-none ${
+                  isDark
+                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                }`}
               />
             </div>
           )}
 
           {/* Footer Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className={`flex items-center justify-end gap-3 pt-4 border-t ${
+            isDark ? 'border-[#3c5638]' : 'border-[#e2e8f0]'
+          }`}>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
+              className={`px-4 py-2 text-xs font-semibold transition ${
+                isDark ? 'text-[#e9edc9] hover:text-white' : 'text-[#556b2f] hover:text-black'
+              }`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50"
+              className={`px-5 py-2.5 text-xs font-semibold text-white rounded-xl shadow-md transition disabled:opacity-50 ${
+                isDark
+                  ? 'bg-[#556b2f] hover:bg-[#606c38]'
+                  : 'bg-[#385233] hover:bg-[#283b24]'
+              }`}
             >
               {loading ? 'Saving Task...' : initialTask ? 'Update Task' : 'Create Task'}
             </button>
