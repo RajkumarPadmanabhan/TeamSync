@@ -33,14 +33,17 @@ import {
   Trash2,
   Edit,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Mail,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 
 export default function Home() {
   const { user, isAdmin, allUsers, refreshUsers, loading: authLoading } = useAuth();
 
   // Active Tab View
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team' | 'requests'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
@@ -266,6 +269,7 @@ export default function Home() {
             setIsTaskModalOpen(true);
           }}
           openCreateUserModal={() => setIsTeamModalOpen(true)}
+          pendingRequestsCount={invitations.filter((inv) => inv.status === 'PENDING').length}
         />
 
         {/* Content Body */}
@@ -759,7 +763,107 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 5: TEAM DIRECTORY */}
+          {/* TAB 5: PROJECT REQUESTS */}
+          {activeTab === 'requests' && (
+            <div className="space-y-6 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                    <span>Project Invitations & Requests</span>
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+                      {invitations.filter((inv) => inv.status === 'PENDING').length} Pending
+                    </span>
+                  </h1>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Admin invitations to join projects. Accept requests to participate in project tasks & workflows.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {invitations.length === 0 ? (
+                  <div className="p-12 text-center bg-slate-900/50 rounded-2xl border border-slate-800 space-y-2">
+                    <Mail className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="text-sm font-semibold text-slate-300">No Project Requests Found</p>
+                    <p className="text-xs text-slate-500">
+                      When an Admin invites you to join a project, the request will appear here for your approval.
+                    </p>
+                  </div>
+                ) : (
+                  invitations.map((inv) => {
+                    const project = inv.project_detail;
+                    const sender = inv.sender_detail;
+                    const isPending = inv.status === 'PENDING';
+                    const isAccepted = inv.status === 'ACCEPTED';
+                    const isRejected = inv.status === 'REJECTED';
+
+                    return (
+                      <div
+                        key={inv.id}
+                        className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition"
+                      >
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${isPending ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse' : isAccepted ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border-rose-500/30'}`}>
+                              {inv.status}
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono">
+                              Received: {new Date(inv.created_at).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <h3 className="text-base font-extrabold text-white">
+                            {project?.name || `Project #${inv.project}`}
+                          </h3>
+                          <p className="text-xs text-slate-400">
+                            Invited by <strong className="text-slate-200">{sender?.first_name ? `${sender.first_name} ${sender.last_name}` : sender?.username || 'Admin'}</strong> ({sender?.email})
+                          </p>
+                          {inv.message && (
+                            <div className="p-3 bg-slate-800/50 rounded-xl border border-slate-800 text-xs text-slate-300 italic">
+                              &quot;{inv.message}&quot;
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          {isPending && (
+                            <>
+                              <button
+                                onClick={() => handleRespondInvitation(inv.id, 'reject')}
+                                className="px-4 py-2.5 bg-slate-800 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                <span>Reject Request</span>
+                              </button>
+                              <button
+                                onClick={() => handleRespondInvitation(inv.id, 'accept')}
+                                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/20 transition flex items-center gap-1.5"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Accept & Join Project</span>
+                              </button>
+                            </>
+                          )}
+                          {isAccepted && (
+                            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                              <CheckCircle className="w-4 h-4" /> Joined Project
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 rounded-xl border border-rose-500/20">
+                              <XCircle className="w-4 h-4" /> Request Rejected
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: TEAM DIRECTORY */}
           {activeTab === 'team' && (
             <div className="space-y-6 animate-in fade-in">
               <div className="flex items-center justify-between">

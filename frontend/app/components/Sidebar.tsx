@@ -9,21 +9,22 @@ import {
   Users,
   PlusCircle,
   ShieldAlert,
-  SlidersHorizontal,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Project } from '../types';
 
 interface SidebarProps {
-  activeTab: 'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team';
-  setActiveTab: (tab: 'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team') => void;
+  activeTab: 'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team' | 'requests';
+  setActiveTab: (tab: 'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team' | 'requests') => void;
   projects: Project[];
   selectedProjectId: number | null;
   setSelectedProjectId: (id: number | null) => void;
   openCreateProjectModal: () => void;
   openCreateTaskModal: () => void;
   openCreateUserModal: () => void;
+  pendingRequestsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -35,11 +36,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   openCreateProjectModal,
   openCreateTaskModal,
   openCreateUserModal,
+  pendingRequestsCount = 0,
 }) => {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin } = useAuth();
 
   const navItems = [
     { id: 'overview', label: 'Overview & KPIs', icon: LayoutDashboard },
+    { id: 'requests', label: 'Project Requests', icon: Mail, count: pendingRequestsCount, badge: pendingRequestsCount > 0 ? 'New' : undefined },
     { id: 'projects', label: 'Projects Workspace', icon: FolderKanban, count: projects.length },
     { id: 'tasks', label: 'Task Management', icon: CheckSquare },
     { id: 'deadline-history', label: 'Deadline Audit Trail', icon: History, badge: 'Required' },
@@ -95,12 +98,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${item.badge === 'New' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 animate-pulse' : 'bg-amber-500/20 text-amber-300 border-amber-500/30'}`}>
                     {item.badge}
                   </span>
                 )}
-                {item.count !== undefined && (
-                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded-md font-mono text-slate-400 border border-slate-700">
+                {item.count !== undefined && item.count > 0 && (
+                  <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded-md font-mono text-slate-300 border border-slate-700 font-bold">
                     {item.count}
                   </span>
                 )}
