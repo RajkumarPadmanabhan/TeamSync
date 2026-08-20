@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import { api } from './lib/api';
-import { Project, Task, DashboardStats, TaskStatus, TaskPriority, User } from './types';
+import { Project, Task, DashboardStats, TaskStatus, TaskPriority, User, ProjectInvitation } from './types';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { KpiCards } from './components/KpiCards';
@@ -13,6 +13,7 @@ import { DeadlineModal } from './components/DeadlineModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { TeamRosterModal } from './components/TeamRosterModal';
 import { AuthScreen } from './components/AuthScreen';
+import { InvitationsBanner } from './components/InvitationsBanner';
 import {
   PlusCircle,
   FolderKanban,
@@ -47,6 +48,7 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -65,6 +67,17 @@ export default function Home() {
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [assignedToMeFilter, setAssignedToMeFilter] = useState<boolean>(false);
 
+  const fetchInvitations = async () => {
+    try {
+      if (api.getToken()) {
+        const invList = await api.getProjectInvitations();
+        setInvitations(invList);
+      }
+    } catch (err) {
+      console.error('Error fetching invitations:', err);
+    }
+  };
+
   const loadAllData = async () => {
     try {
       setLoadingData(true);
@@ -79,6 +92,7 @@ export default function Home() {
       setProjects(projectsData);
       setTasks(tasksData);
       setStats(statsData);
+      await fetchInvitations();
     } catch (err: any) {
       console.error(err);
       setDataError(err.message || 'Failed to connect to backend server.');
@@ -92,6 +106,27 @@ export default function Home() {
       loadAllData();
     }
   }, [user]);
+
+  // Handle Invitations
+  const handleRespondInvitation = async (invitationId: number, action: 'accept' | 'reject') => {
+    try {
+      const res = await api.respondToInvitation(invitationId, action);
+      alert(res.detail);
+      await loadAllData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to respond to invitation.');
+    }
+  };
+
+  const handleSendProjectInvitation = async (projectId: number, userId: number) => {
+    try {
+      const res = await api.sendProjectInvitation(projectId, userId);
+      alert(res.detail);
+      await fetchInvitations();
+    } catch (err: any) {
+      alert(err.message || 'Failed to send invitation request.');
+    }
+  };
 
   // Security Guard: If unauthenticated, securely render AuthScreen and prevent back navigation
   if (!user && !authLoading) {
@@ -235,6 +270,12 @@ export default function Home() {
 
         {/* Content Body */}
         <main className="flex-1 p-4 lg:p-8 space-y-6 overflow-y-auto">
+          {/* Project Invitations Banner */}
+          <InvitationsBanner
+            invitations={invitations}
+            onRespond={handleRespondInvitation}
+          />
+
           {/* Global Alert / Info Banner */}
           {dataError && (
             <div className="p-4 bg-rose-500/20 border border-rose-500/40 rounded-2xl text-xs text-rose-200 flex items-center justify-between">
@@ -762,7 +803,59 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 font-mono">{u.email}</p>
-                      <p className="text-[11px] text-slate-500">{u.department || 'General'}</p>
+                      <p className="text-[11px] text-slate-500 mb-2">{u.department || 'General'}</p>
+
+                      {/* Admin Project Request Controls */}
+                      {isAdmin && u.id !== user?.id && (
+                        <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                          <div className="flex items-center gap-1.5 text-[11px]">
+                            <select
+                              id={`project-select-${u.id}`}
+                              className="bg-slate-800 text-slate-200 text-[11px] rounded-lg px-2 py-1 border border-slate-700 focus:outline-none flex-1"
+                              defaultValue={projects[0]?.id || ''}
+                            >
+                              {projects.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => {
+                                const selectEl = document.getElementById(`project-select-${u.id}`) as HTMLSelectElement;
+                                const projId = Number(selectEl?.value);
+                                if (projId) {
+                                  handleSendProjectInvitation(projId, u.id);
+                                }
+                              }}
+                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] rounded-lg transition shadow"
+                              title="Send invitation request to join project"
+                            >
+                              Send Request
+                            </button>
+                          </div>
+
+                          {/* Render Existing Invitation Badges */}
+                          {invitations
+                            .filter((inv) => inv.invited_user === u.id)
+                            .map((inv) => (
+                              <div key={inv.id} className="flex items-center justify-between text-[10px] bg-slate-800/40 px-2 py-1 rounded border border-slate-800">
+                                <span className="text-slate-400 truncate">{inv.project_detail?.name}:</span>
+                                {inv.status === 'PENDING' && <span className="font-bold text-amber-400">⌛ Pending</span>}
+                                {inv.status === 'ACCEPTED' && <span className="font-bold text-emerald-400">✅ Joined</span>}
+                                {inv.status === 'REJECTED' && (
+                                  <button
+                                    onClick={() => handleSendProjectInvitation(inv.project, u.id)}
+                                    className="font-bold text-rose-400 hover:underline cursor-pointer"
+                                    title="Click to re-send invitation request"
+                                  >
+                                    ❌ Rejected (Re-send)
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

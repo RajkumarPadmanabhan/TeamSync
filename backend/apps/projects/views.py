@@ -62,3 +62,84 @@ class ProjectViewSet(viewsets.ModelViewSet):
             return Response({'detail': f'{user.get_full_name() or user.username} removed from project.', 'project': ProjectSerializer(project).data})
         except User.DoesNotExist:
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+from .models import ProjectInvitation
+from .serializers import ProjectInvitationSerializer
+
+class ProjectInvitationViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectInvitationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return ProjectInvitation.objects.none()
+        if user.is_admin_role():
+            return ProjectInvitation.objects.all()
+        return ProjectInvitation.objects.filter(invited_user=user)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def send_request(self, request):
+        if not request.user.is_admin_role():
+            return Response({'detail': 'Only admins can send project invitations.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        project_id = request.data.get('project_id')
+        user_id = request.data.get('user_id')
+        message = request.data.get('message', 'Admin has invited you to join the project.')
+
+        if not project_id or not user_id:
+            return Response({'detail': 'project_id and user_id are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            project = Project.objects.get(id=project_id)
+            user_to_invite = User.objects.get(id=user_id)
+        except (Project.DoesNotExist, User.DoesNotExist):
+            return Response({'detail': 'Project or User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if project.members.filter(id=user_to_invite.id).exists():
+            return Response({'detail': f'{user_to_invite.username} is already a member of this project.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        invitation, created = ProjectInvitation.objects.update_or_create(
+            project=project,
+            invited_user=user_to_invite,
+            defaults={
+                'sender': request.user,
+                'status': ProjectInvitation.Status.PENDING,
+                'message': message
+            }
+        )
+
+        return Response({
+            'detail': f'Invitation request sent to {user_to_invite.username} successfully!',
+            'invitation': ProjectInvitationSerializer(invitation).data
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def respond(self, request, pk=None):
+        invitation = self.get_object()
+        user = request.user
+
+        if invitation.invited_user != user and not user.is_admin_role():
+            return Response({'detail': 'You cannot respond to an invitation sent to another user.'}, status=status.HTTP_403_FORBIDDEN)
+
+        action_choice = request.data.get('action')
+        if action_choice not in ['accept', 'reject']:
+            return Response({'detail': "action must be 'accept' or 'reject'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if action_choice == 'accept':
+            invitation.status = ProjectInvitation.Status.ACCEPTED
+            invitation.save()
+            invitation.project.members.add(invitation.invited_user)
+            return Response({
+                'detail': f'You have ACCEPTED the invitation to join project "{invitation.project.name}".',
+                'invitation': ProjectInvitationSerializer(invitation).data
+            })
+        else:
+            invitation.status = ProjectInvitation.Status.REJECTED
+            invitation.save()
+            return Response({
+                'detail': f'You have REJECTED the invitation to join project "{invitation.project.name}". Admin can re-send another request.',
+                'invitation': ProjectInvitationSerializer(invitation).data
+            })
+

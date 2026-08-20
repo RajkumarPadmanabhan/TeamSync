@@ -109,3 +109,17 @@ export interface DashboardStats {
   my_tasks_count: number;
   my_completed_tasks: number;
 }
+
+export interface ProjectInvitation {
+  id: number;
+  project: number;
+  project_detail?: Project;
+  invited_user: number;
+  invited_user_detail?: User;
+  sender: number;
+  sender_detail?: User;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  message: string;
+  created_at: string;
+  updated_at: string;
+}

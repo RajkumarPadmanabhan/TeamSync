@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project
+from .models import Project, ProjectInvitation
 from apps.users.serializers import UserSerializer
 from django.contrib.auth import get_user_model
 
@@ -40,3 +40,18 @@ class ProjectSerializer(serializers.ModelSerializer):
             return 0
         completed = obj.tasks.filter(status='COMPLETED').count()
         return round((completed / total) * 100)
+
+
+class ProjectInvitationSerializer(serializers.ModelSerializer):
+    project_detail = ProjectSerializer(source='project', read_only=True)
+    invited_user_detail = UserSerializer(source='invited_user', read_only=True)
+    sender_detail = UserSerializer(source='sender', read_only=True)
+
+    class Meta:
+        model = ProjectInvitation
+        fields = [
+            'id', 'project', 'project_detail', 'invited_user', 'invited_user_detail',
+            'sender', 'sender_detail', 'status', 'message', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'sender', 'status', 'created_at', 'updated_at']
+
