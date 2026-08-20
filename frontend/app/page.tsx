@@ -12,6 +12,7 @@ import { TaskModal } from './components/TaskModal';
 import { DeadlineModal } from './components/DeadlineModal';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { TeamRosterModal } from './components/TeamRosterModal';
+import { AuthScreen } from './components/AuthScreen';
 import {
   PlusCircle,
   FolderKanban,
@@ -91,6 +92,11 @@ export default function Home() {
       loadAllData();
     }
   }, [user]);
+
+  // If user is not authenticated, display AuthScreen (Login / Sign Up with Role Dropdown)
+  if (!user && !authLoading) {
+    return <AuthScreen onSuccess={loadAllData} />;
+  }
 
   // Handle Project Creation
   const handleCreateProject = async (data: any) => {
@@ -385,7 +391,6 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-3 pt-3 border-t border-slate-800">
-                      {/* Progress Bar */}
                       <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-300"
@@ -393,7 +398,6 @@ export default function Home() {
                         />
                       </div>
 
-                      {/* Member Avatars Stack */}
                       <div className="flex items-center justify-between text-xs text-slate-400">
                         <div className="flex items-center -space-x-2">
                           {proj.members_detail?.map((m) => (
@@ -513,7 +517,7 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Tasks List Table / Grid */}
+              {/* Tasks List */}
               <div className="space-y-3">
                 {filteredTasks.length === 0 ? (
                   <div className="p-12 text-center bg-slate-900/50 rounded-2xl border border-slate-800">
@@ -529,7 +533,6 @@ export default function Home() {
                         key={t.id}
                         className="bg-slate-900/90 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 transition shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4"
                       >
-                        {/* Task Title & Project */}
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
@@ -555,9 +558,7 @@ export default function Home() {
                           </p>
                         </div>
 
-                        {/* Assignee, Deadline & Actions */}
                         <div className="flex items-center gap-4 text-xs shrink-0 flex-wrap">
-                          {/* Assignee Pill */}
                           <div className="flex items-center gap-2 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/60">
                             {assignee ? (
                               <>
@@ -575,13 +576,11 @@ export default function Home() {
                             )}
                           </div>
 
-                          {/* Deadline Badge */}
                           <div className="flex items-center gap-1.5 text-slate-300 font-medium bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/60">
                             <Calendar className="w-3.5 h-3.5 text-amber-400" />
                             <span>{formatDate(t.deadline)}</span>
                           </div>
 
-                          {/* Deadline History Button (Additional Challenge) */}
                           <button
                             onClick={() => openDeadlineHistoryModal(t)}
                             className="p-2 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl border border-amber-500/30 font-semibold text-xs flex items-center gap-1 transition"
@@ -591,7 +590,6 @@ export default function Home() {
                             <span className="hidden sm:inline">History ({t.deadline_history_count})</span>
                           </button>
 
-                          {/* Comments Button */}
                           <button
                             onClick={() => openTaskDetail(t)}
                             className="p-2 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 font-semibold text-xs flex items-center gap-1 transition"
@@ -600,7 +598,6 @@ export default function Home() {
                             <span>{t.comments_count}</span>
                           </button>
 
-                          {/* Admin Edit/Delete */}
                           {isAdmin && (
                             <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
                               <button
@@ -631,7 +628,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 4: DEADLINE AUDIT TRAIL (ADDITIONAL CHALLENGE) */}
+          {/* TAB 4: DEADLINE AUDIT TRAIL */}
           {activeTab === 'deadline-history' && (
             <div className="space-y-6 animate-in fade-in">
               <div className="flex items-center justify-between">
