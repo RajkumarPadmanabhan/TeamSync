@@ -10,20 +10,24 @@
 
 ## 📂 Deliverables Folder
 
-All requested project evaluation deliverables are stored inside the [`Deliverables/`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README.md) directory:
+All requested project evaluation deliverables are stored inside the [`Deliverables/`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README.md) directory in both PDF and Markdown formats:
 
-1. 📄 **[Installation & Setup Instructions (`Deliverables/README.md`)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README.md)**
+1. 📄 **[Installation & Setup Instructions (PDF)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README_Installation_Guide.pdf)** | [Markdown](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README.md)
    - Local setup guide (Python, virtualenv, Node.js, seed script)
    - Docker Compose containerization instructions
    - Pre-configured Admin & Member account credentials
 
-2. 🗄️ **[Database Schema & ER Diagram (`Deliverables/DATABASE_SCHEMA_ER_DIAGRAM.md`)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/DATABASE_SCHEMA_ER_DIAGRAM.md)**
+2. 🗄️ **[Database Schema & ER Diagram (PDF)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/Database_Schema_ER_Diagram.pdf)** | [Markdown](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/DATABASE_SCHEMA_ER_DIAGRAM.md)
    - Complete Mermaid Relational Entity-Relationship (ER) Diagram
    - Detailed specifications for all 7 database tables, fields, types, foreign keys, and constraints
 
-3. 🔌 **[API Documentation (`Deliverables/API_DOCUMENTATION.md`)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/API_DOCUMENTATION.md)**
+3. 🔌 **[API Documentation (PDF)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/API_Documentation.pdf)** | [Markdown](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/API_DOCUMENTATION.md)
    - Complete technical specification for all REST API endpoints (`/api/auth/`, `/api/projects/`, `/api/tasks/`, `/api/projects/invitations/`)
    - Headers, authentication schemas, payload JSON examples, and RBAC rules
+
+---
+
+> **Copyright © 2026 Rajkumar PR. All Rights Reserved.**
 
 ---
 

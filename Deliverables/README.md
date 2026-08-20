@@ -10,13 +10,18 @@
 
 ## 📂 Deliverables Directory Overview
 
-This repository includes a dedicated `Deliverables/` folder containing all required project submission artifacts:
+This repository includes a dedicated `Deliverables/` folder containing all required project submission artifacts in both Markdown and PDF formats with copyright **Rajkumar PR**:
 
-| Document | File Link | Description |
-| :--- | :--- | :--- |
-| **1. README & Setup Guide** | [`Deliverables/README.md`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README.md) | Complete installation, Docker containerization, local execution, and role account guide |
-| **2. Database Schema & ER Diagram** | [`Deliverables/DATABASE_SCHEMA_ER_DIAGRAM.md`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/DATABASE_SCHEMA_ER_DIAGRAM.md) | Mermaid relational ER diagram, table schemas, foreign keys, fields, and constraints |
-| **3. API Documentation** | [`Deliverables/API_DOCUMENTATION.md`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/API_DOCUMENTATION.md) | Complete REST API specification with endpoints, request/response JSON schemas, and RBAC rules |
+| Document | PDF Version | Markdown Source | Description |
+| :--- | :--- | :--- | :--- |
+| **1. README & Setup Guide** | [`Deliverables/README_Installation_Guide.pdf`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README_Installation_Guide.pdf) | [`README.md`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/README.md) | Complete installation, Docker containerization, local execution, and role account guide |
+| **2. Database Schema & ER Diagram** | [`Deliverables/Database_Schema_ER_Diagram.pdf`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/Database_Schema_ER_Diagram.pdf) | [`DATABASE_SCHEMA_ER_DIAGRAM.md`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/DATABASE_SCHEMA_ER_DIAGRAM.md) | Relational ER diagram, table schemas, foreign keys, fields, and constraints |
+| **3. API Documentation** | [`Deliverables/API_Documentation.pdf`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/API_Documentation.pdf) | [`API_DOCUMENTATION.md`](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/API_DOCUMENTATION.md) | Complete REST API specification with endpoints, request/response JSON schemas, and RBAC rules |
+
+---
+
+> **Copyright Notice**:  
+> **Copyright © 2026 Rajkumar PR. All Rights Reserved.**
 
 ---
 
