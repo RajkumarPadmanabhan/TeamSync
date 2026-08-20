@@ -239,11 +239,11 @@ export default function Home() {
     }
   };
 
-  const handleSaveUserProfile = async (updatedData: { id?: number; first_name: string; last_name: string; email: string; role: Role; department: string }) => {
+  const handleSaveUserProfile = async (updatedData: { id?: number; first_name: string; last_name: string; email: string; role: Role; department: string; avatar_url?: string }) => {
     try {
       const targetId = updatedData.id || selectedUserForEdit?.id || user.id;
       await api.updateUser(targetId, updatedData);
-      showToast('User profile info updated successfully!', 'success');
+      showToast('User profile & avatar updated successfully!', 'success');
       setIsProfileModalOpen(false);
       setSelectedUserForEdit(null);
       await refreshUsers();

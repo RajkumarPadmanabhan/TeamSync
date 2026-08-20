@@ -12,7 +12,7 @@ class User(AbstractUser):
         default=Role.MEMBER
     )
     department = models.CharField(max_length=100, blank=True, default='General')
-    avatar_url = models.URLField(max_length=500, blank=True, null=True)
+    avatar_url = models.TextField(blank=True, null=True)
 
     def is_admin_role(self):
         return self.role == self.Role.ADMIN or self.is_superuser
