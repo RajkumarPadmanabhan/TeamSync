@@ -1,4 +1,4 @@
-# TeamSync REST API Integration Documentation (`apiinfo`)
+# TeamSync REST API Integration Documentation (`apiguide`)
 
 Base URL: http://localhost:8000/api
 Authentication Standard: JSON Web Token (JWT) Bearer Authentication
