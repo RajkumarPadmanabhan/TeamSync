@@ -1,6 +1,5 @@
 # 🚀 TeamSync - Team Project & Task Management Application
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/Release-v5.0-emerald.svg)](https://github.com/RajkumarPadmanabhan/TeamSync/releases)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/RajkumarPadmanabhan/TeamSync)
 
