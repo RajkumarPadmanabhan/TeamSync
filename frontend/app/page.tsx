@@ -158,15 +158,30 @@ export default function Home() {
     if (statusFilter && t.status !== statusFilter) return false;
     if (priorityFilter && t.priority !== priorityFilter) return false;
     if (assignedToMeFilter && t.assigned_to !== user?.id) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
       const matchTitle = t.title.toLowerCase().includes(q);
       const matchDesc = t.description.toLowerCase().includes(q);
       const matchProj = t.project_name?.toLowerCase().includes(q);
-      const matchAssignee = t.assigned_to_detail?.first_name?.toLowerCase().includes(q) || t.assigned_to_detail?.username.toLowerCase().includes(q);
-      return matchTitle || matchDesc || matchProj || matchAssignee;
+      const matchAssignee = t.assigned_to_detail?.first_name?.toLowerCase().includes(q) || t.assigned_to_detail?.last_name?.toLowerCase().includes(q) || t.assigned_to_detail?.username.toLowerCase().includes(q);
+      const matchPriority = t.priority.toLowerCase().includes(q);
+      const matchStatus = t.status.toLowerCase().includes(q);
+      return matchTitle || matchDesc || matchProj || matchAssignee || matchPriority || matchStatus;
     }
     return true;
+  });
+
+  // Filtered Projects based on global search query
+  const filteredProjects = projects.filter((p) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const matchName = p.name.toLowerCase().includes(q);
+    const matchDesc = p.description.toLowerCase().includes(q);
+    const matchStatus = p.status.toLowerCase().includes(q);
+    const matchMember = p.members_detail?.some(
+      (m) => m.first_name?.toLowerCase().includes(q) || m.last_name?.toLowerCase().includes(q) || m.username.toLowerCase().includes(q)
+    );
+    return matchName || matchDesc || matchStatus || matchMember;
   });
 
   const priorityBadge: Record<string, string> = {
@@ -231,6 +246,24 @@ export default function Home() {
             </div>
           )}
 
+          {/* Active Search Query Status Bar */}
+          {searchQuery.trim() && (
+            <div className="p-3 bg-indigo-600/20 border border-indigo-500/40 rounded-2xl text-xs text-indigo-200 flex items-center justify-between animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span>
+                  Filtering results for &quot;<strong className="text-white font-bold">{searchQuery}</strong>&quot; — Found <strong>{filteredTasks.length}</strong> task(s) and <strong>{filteredProjects.length}</strong> project(s)
+                </span>
+              </div>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-2.5 py-1 bg-indigo-500/30 hover:bg-indigo-500/50 text-white font-bold text-[11px] rounded-lg transition"
+              >
+                Clear Search ✕
+              </button>
+            </div>
+          )}
+
           {/* TAB 1: OVERVIEW DASHBOARD */}
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-in fade-in">
@@ -283,7 +316,7 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-4">
-                    {projects.map((proj) => (
+                    {filteredProjects.map((proj) => (
                       <div key={proj.id} className="p-3.5 bg-slate-800/50 rounded-xl border border-slate-800 space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-bold text-slate-200">{proj.name}</span>
@@ -372,7 +405,7 @@ export default function Home() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {projects.map((proj) => (
+                {filteredProjects.map((proj) => (
                   <div
                     key={proj.id}
                     className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl hover:border-slate-700 transition flex flex-col justify-between space-y-4"
