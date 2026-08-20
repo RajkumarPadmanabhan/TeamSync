@@ -830,30 +830,71 @@ export default function Home() {
                 </p>
 
                 <div className="space-y-3">
-                  {tasks
-                    .filter((t) => t.deadline_history_count > 0)
-                    .map((t) => (
-                      <div
-                        key={t.id}
-                        className="p-4 bg-slate-800/60 border border-slate-800 hover:border-amber-500/40 rounded-xl flex items-center justify-between gap-4 transition"
-                      >
-                        <div>
-                          <p className="text-xs text-slate-400 font-mono">{t.project_name}</p>
-                          <h4 className="font-bold text-sm text-white">{t.title}</h4>
-                          <p className="text-xs text-amber-400 font-medium mt-1">
-                            Current Deadline: {formatDate(t.deadline)}
-                          </p>
-                        </div>
-
-                        <button
-                          onClick={() => openDeadlineHistoryModal(t)}
-                          className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs rounded-xl border border-amber-500/40 flex items-center gap-1.5 transition"
+                  {tasks.length === 0 ? (
+                    <div className="p-8 text-center bg-slate-800/40 rounded-xl border border-slate-800">
+                      <History className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-slate-300">No tasks created yet</p>
+                      <p className="text-xs text-slate-500 mt-1">Create tasks to track deadline revision history.</p>
+                    </div>
+                  ) : (
+                    tasks.map((t) => {
+                      const hasRevisions = t.deadline_history_count > 0;
+                      return (
+                        <div
+                          key={t.id}
+                          className="p-4 bg-slate-800/60 border border-slate-800 hover:border-amber-500/40 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition"
                         >
-                          <History className="w-4 h-4" />
-                          <span>View Audit Log ({t.deadline_history_count})</span>
-                        </button>
-                      </div>
-                    ))}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-700">
+                                {t.project_name || `Project #${t.project}`}
+                              </span>
+                              {hasRevisions ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                  ⚡ {t.deadline_history_count} Revisions Logged
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                                  Initial Deadline
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="font-bold text-sm text-white">{t.title}</h4>
+                            <p className="text-xs text-amber-400 font-medium">
+                              Current Deadline: {formatDate(t.deadline)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap shrink-0">
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  setEditingTask(t);
+                                  setIsTaskModalOpen(true);
+                                }}
+                                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition"
+                                title="Update Task Deadline & Record Audit Reason"
+                              >
+                                <Edit className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>Update Deadline</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => openDeadlineHistoryModal(t)}
+                              className={`px-4 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 transition ${
+                                hasRevisions
+                                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40 shadow-sm'
+                                  : 'bg-slate-800 hover:bg-slate-700/80 text-slate-300 border-slate-700'
+                              }`}
+                            >
+                              <History className="w-4 h-4 text-amber-400" />
+                              <span>View Audit Log ({t.deadline_history_count})</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
