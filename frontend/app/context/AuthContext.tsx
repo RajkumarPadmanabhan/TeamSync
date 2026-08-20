@@ -50,10 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     fetchSession();
 
-    // Prevent browser back button access after logout
+    // Listener for browser navigation state
     const handlePopState = () => {
       if (!api.getToken()) {
         setUser(null);
+        setAllUsers([]);
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -103,12 +104,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     api.setToken(null);
-    setUser(null);
-    setAllUsers([]);
-    // Security: Replace browser history entry to prevent back-button navigation to protected dashboard
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('teamsync_token');
+      localStorage.clear();
+      sessionStorage.clear();
       window.history.pushState(null, '', '/login');
     }
+    setUser(null);
+    setAllUsers([]);
   };
 
   const isAdmin = user?.role === 'ADMIN' || user?.is_staff === true;
