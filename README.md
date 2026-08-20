@@ -1,4 +1,3 @@
-# Product Requirements Document (PRD)
 
 # TeamSync / TeamTrack — Project & Task Management Suite for Teams
 
