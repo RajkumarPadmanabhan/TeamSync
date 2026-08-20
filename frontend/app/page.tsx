@@ -93,8 +93,11 @@ export default function Home() {
     }
   }, [user]);
 
-  // If user is not authenticated, display AuthScreen (Login / Sign Up with Role Dropdown)
+  // Security Guard: If unauthenticated, securely render AuthScreen and prevent back navigation
   if (!user && !authLoading) {
+    if (typeof window !== 'undefined' && window.history.state?.protected) {
+      window.history.replaceState(null, '', '/login');
+    }
     return <AuthScreen onSuccess={loadAllData} />;
   }
 

@@ -29,18 +29,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const token = api.getToken();
       if (token) {
-        // Retrieve profile of strictly logged in / signed up user
         const currentUser = await api.getMe();
         setUser(currentUser);
         const usersList = await api.getUsers();
         setAllUsers(usersList);
       } else {
-        // Strictly unauthenticated: force user to sign up or log in
         setUser(null);
+        setAllUsers([]);
       }
       setError(null);
     } catch (err: any) {
       setUser(null);
+      setAllUsers([]);
       api.setToken(null);
     } finally {
       setLoading(false);
@@ -49,6 +49,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     fetchSession();
+
+    // Prevent browser back button access after logout
+    const handlePopState = () => {
+      if (!api.getToken()) {
+        setUser(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const login = async (username: string, password: string) => {
@@ -95,6 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     api.setToken(null);
     setUser(null);
+    setAllUsers([]);
+    // Security: Replace browser history entry to prevent back-button navigation to protected dashboard
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/login');
+    }
   };
 
   const isAdmin = user?.role === 'ADMIN' || user?.is_staff === true;
