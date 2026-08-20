@@ -1,38 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #141d13;
-  --foreground: #fefae0;
+  --background: #faf8f3;
+  --foreground: #1b2819;
   --olive-dark: #141d13;
   --olive-main: #1f2c1d;
   --olive-card: #283925;
   --olive-border: #3c5638;
-  --olive-accent: #556b2f;
-  --cream-light: #fefae0;
-  --cream-soft: #e9edc9;
+  --olive-accent: #385233;
+  --cream-light: #faf8f3;
+  --cream-card: #ffffff;
+  --cream-border: #d4ddcf;
 }
 
 body {
-  background-color: #141d13;
-  color: #fefae0;
+  background-color: #faf8f3;
+  color: #1b2819;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Custom Scrollbar for Dark Olive Green & Cream Theme */
+/* Custom Scrollbar for Light Cream & Dark Olive Theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #141d13;
+  background: #faf8f3;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3c5638;
+  background: #d4ddcf;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #556b2f;
+  background: #385233;
 }

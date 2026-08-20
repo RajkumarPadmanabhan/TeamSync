@@ -13,12 +13,14 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeMode>('dark');
+  const [theme, setThemeState] = useState<ThemeMode>('light');
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('teamsync_theme') as ThemeMode | null;
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setThemeState(savedTheme);
+    } else {
+      setThemeState('light');
     }
   }, []);
 
@@ -42,9 +44,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    // Return fallback state if outside provider to prevent crashes
+    // Return fallback light theme state if outside provider
     return {
-      theme: 'dark' as ThemeMode,
+      theme: 'light' as ThemeMode,
       toggleTheme: () => {},
       setTheme: () => {},
     };
