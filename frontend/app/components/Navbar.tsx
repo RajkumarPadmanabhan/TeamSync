@@ -1,18 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  ShieldCheck,
-  UserCheck,
-  Search,
-  ChevronDown,
   Layers,
   Building2,
+  Search,
   RefreshCw,
-  LogOut,
-  Sparkles,
-  User as UserIcon
+  LogOut
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -22,17 +17,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearchQuery }) => {
-  const { user, login, logout, isAdmin, allUsers, loading } = useAuth();
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-
-  const handleSwitchUser = async (username: string) => {
-    try {
-      await login(username, 'password123');
-      setShowRoleDropdown(false);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { user, logout, isAdmin, loading } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800 text-slate-100 px-4 lg:px-8 py-3 transition-all">
@@ -85,64 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearc
             </button>
           )}
 
-          {/* Account Switcher Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-              className="flex items-center gap-2 bg-gradient-to-r from-slate-800 to-slate-800/90 hover:from-slate-700 hover:to-slate-800 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-700/80 shadow-sm transition"
-            >
-              <UserIcon className="w-3.5 h-3.5 text-indigo-400" />
-              <span className="text-slate-300 hidden sm:inline">Account:</span>
-              <span className={`px-2 py-0.5 rounded-md font-bold text-[11px] ${isAdmin ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'}`}>
-                {isAdmin ? 'Admin' : 'Team Member'}
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-
-            {showRoleDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-3 py-2 border-b border-slate-800">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Authenticate User
-                  </p>
-                  <p className="text-[10px] text-slate-500">Real REST API Authentication</p>
-                </div>
-                <div className="mt-1 space-y-1 max-h-56 overflow-y-auto">
-                  {allUsers.map((u) => {
-                    const isSelected = user?.username === u.username;
-                    return (
-                      <button
-                        key={u.id}
-                        onClick={() => handleSwitchUser(u.username)}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition ${
-                          isSelected
-                            ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/40'
-                            : 'hover:bg-slate-800 text-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {u.role === 'ADMIN' ? (
-                            <ShieldCheck className="w-4 h-4 text-indigo-400" />
-                          ) : (
-                            <UserCheck className="w-4 h-4 text-emerald-400" />
-                          )}
-                          <div>
-                            <p className="font-semibold text-slate-200">
-                              {u.first_name ? `${u.first_name} ${u.last_name}` : u.username}
-                            </p>
-                            <p className="text-[10px] text-slate-400">{u.department || u.role}</p>
-                          </div>
-                        </div>
-                        {isSelected && <span className="text-[10px] bg-indigo-500 text-white font-bold px-1.5 py-0.5 rounded">Active</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Active User Badge & Logout */}
+          {/* Active User Badge & Role Tag */}
           {user && (
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2.5 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/80">
@@ -151,10 +79,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearc
                   alt={user.username}
                   className="w-7 h-7 rounded-full ring-2 ring-indigo-500/40 object-cover"
                 />
-                <div className="text-left hidden lg:block">
-                  <p className="text-xs font-bold text-slate-200 leading-tight">
-                    {user.first_name ? `${user.first_name} ${user.last_name}` : user.username}
-                  </p>
+                <div className="text-left hidden sm:block">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-200 leading-tight">
+                      {user.first_name ? `${user.first_name} ${user.last_name}` : user.username}
+                    </span>
+                    <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase ${isAdmin ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'}`}>
+                      {isAdmin ? 'Admin' : 'Member'}
+                    </span>
+                  </div>
                   <p className="text-[10px] text-slate-400 font-medium">
                     {user.department || (isAdmin ? 'Admin' : 'Member')}
                   </p>
@@ -163,10 +96,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, searchQuery, setSearc
 
               <button
                 onClick={logout}
-                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition"
+                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition flex items-center gap-1 text-xs font-semibold"
                 title="Logout Session"
               >
                 <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           )}
