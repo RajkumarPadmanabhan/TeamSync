@@ -301,6 +301,80 @@
 
 ---
 
+### 2.4 Project Invitation Requests & Approval Workflow (`/api/projects/invitations/`)
+
+#### 2.4.1 Admin Send Project Invitation Request
+- **URL**: `http://localhost:8000/api/projects/invitations/send_request/`
+- **Method**: `POST`
+- **Access**: Admin Only
+- **Headers**: `Authorization: Bearer <admin_access_token>`
+- **Request Body**:
+  ```json
+  {
+    "project_id": 1,
+    "user_id": 2,
+    "message": "Admin has invited you to join the Enterprise Cloud Migration project."
+  }
+  ```
+- **Success Response (`201 Created`)**:
+  ```json
+  {
+    "detail": "Invitation request sent to alice successfully!",
+    "invitation": {
+      "id": 1,
+      "project": 1,
+      "invited_user": 2,
+      "sender": 1,
+      "status": "PENDING",
+      "message": "Admin has invited you to join the Enterprise Cloud Migration project.",
+      "created_at": "2026-08-20T14:15:00Z"
+    }
+  }
+  ```
+
+#### 2.4.2 List Project Requests for Logged-In User
+- **URL**: `http://localhost:8000/api/projects/invitations/`
+- **Method**: `GET`
+- **Access**: Authenticated
+- **Success Response (`200 OK`)**:
+  ```json
+  [
+    {
+      "id": 1,
+      "project": 1,
+      "project_detail": { "id": 1, "name": "Enterprise Cloud Migration" },
+      "invited_user": 2,
+      "sender": 1,
+      "sender_detail": { "id": 1, "first_name": "Rajkumar", "role": "ADMIN" },
+      "status": "PENDING",
+      "message": "Admin has invited you to join the project."
+    }
+  ]
+  ```
+
+#### 2.4.3 Team Member Respond to Project Invitation (Accept or Reject)
+- **URL**: `http://localhost:8000/api/projects/invitations/{id}/respond/`
+- **Method**: `POST`
+- **Access**: Authenticated (`invited_user`)
+- **Request Body**:
+  ```json
+  {
+    "action": "accept"
+  }
+  ```
+- **Success Response (`200 OK`)**:
+  ```json
+  {
+    "detail": "You have ACCEPTED the invitation to join project \"Enterprise Cloud Migration\".",
+    "invitation": {
+      "id": 1,
+      "status": "ACCEPTED"
+    }
+  }
+  ```
+
+---
+
 ## 3. Task Management & Audit Endpoints (`/api/tasks/`)
 
 ### 3.1 List & Filter Tasks

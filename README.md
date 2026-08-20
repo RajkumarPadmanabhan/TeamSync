@@ -74,8 +74,10 @@ erDiagram
     User ||--o{ TaskComment : "author"
     User ||--o{ TaskActivity : "user"
     User ||--o{ TaskAttachment : "uploaded_by"
+    User ||--o{ ProjectInvitation : "invited_user / sender"
 
     Project ||--o{ Task : "contains"
+    Project ||--o{ ProjectInvitation : "has_invitations"
     
     Task ||--o{ DeadlineHistory : "has_history"
     Task ||--o{ TaskComment : "has_comments"
@@ -98,6 +100,16 @@ erDiagram
         string status "PLANNING | ACTIVE | ON_HOLD | COMPLETED"
         date start_date
         date end_date
+    }
+
+    ProjectInvitation {
+        int id PK
+        int project_id FK
+        int invited_user_id FK
+        int sender_id FK
+        string status "PENDING | ACCEPTED | REJECTED"
+        string message
+        datetime created_at
     }
 
     Task {
