@@ -24,6 +24,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Task.objects.all().select_related('project', 'assigned_to', 'created_by').order_by('-created_at')
         
+        # STRICT ENFORCEMENT: Team Members can ONLY access tasks assigned to them!
+        if not user.is_admin_role():
+            queryset = queryset.filter(assigned_to=user)
+
         project_id = self.request.query_params.get('project')
         if project_id:
             queryset = queryset.filter(project_id=project_id)
