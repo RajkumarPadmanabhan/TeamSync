@@ -25,6 +25,9 @@ All requested project evaluation deliverables are stored inside the [`Deliverabl
    - Complete technical specification for all REST API endpoints (`/api/auth/`, `/api/projects/`, `/api/tasks/`, `/api/projects/invitations/`)
    - Headers, authentication schemas, payload JSON examples, and RBAC rules
 
+4. 🎯 **[Interview Evaluation Criteria Matrix (PDF)](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/Interview_Evaluation_Criteria_Matrix.pdf)** | [Markdown](file:///c:/Users/Rajkumar/Downloads/TeamSync/Deliverables/INTERVIEW_EVALUATION_CRITERIA_MATRIX.md)
+   - Detailed self-assessment matrix covering all 8 evaluation criteria (Functionality, Code Quality, Database Design, API Integration, Security, UX, Problem-Solving, Documentation)
+
 ---
 
 > **Copyright © 2026 Rajkumar PR. All Rights Reserved.**
