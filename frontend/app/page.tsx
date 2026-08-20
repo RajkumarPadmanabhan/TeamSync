@@ -15,6 +15,7 @@ import { TeamRosterModal } from './components/TeamRosterModal';
 import { AuthScreen } from './components/AuthScreen';
 import { InvitationsBanner } from './components/InvitationsBanner';
 import { UserProfileModal } from './components/UserProfileModal';
+import { ToastNotification, ToastMessage, ToastType, ConfirmDialogState } from './components/ToastNotification';
 import {
   PlusCircle,
   FolderKanban,
@@ -69,6 +70,19 @@ export default function Home() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
 
+  // Toast & Warning Dialog state
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+
+  const showToast = (type: ToastType, title: string, message: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, type, title, message }]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const handleSaveUserProfile = async (data: any) => {
     try {
       if (data.id === user?.id) {
@@ -78,8 +92,9 @@ export default function Home() {
       }
       await refreshUsers();
       await loadAllData();
+      showToast('success', 'Profile Updated', 'User profile information updated successfully.');
     } catch (err: any) {
-      alert(err.message || 'Failed to update user profile.');
+      showToast('error', 'Update Failed', err.message || 'Failed to update user profile.');
     }
   };
 
@@ -132,20 +147,20 @@ export default function Home() {
   const handleRespondInvitation = async (invitationId: number, action: 'accept' | 'reject') => {
     try {
       const res = await api.respondToInvitation(invitationId, action);
-      alert(res.detail);
+      showToast(action === 'accept' ? 'success' : 'info', 'Project Invitation Updated', res.detail);
       await loadAllData();
     } catch (err: any) {
-      alert(err.message || 'Failed to respond to invitation.');
+      showToast('error', 'Action Failed', err.message || 'Failed to respond to invitation.');
     }
   };
 
   const handleSendProjectInvitation = async (projectId: number, userId: number) => {
     try {
       const res = await api.sendProjectInvitation(projectId, userId);
-      alert(res.detail);
+      showToast('success', 'Invitation Request Sent', res.detail);
       await fetchInvitations();
     } catch (err: any) {
-      alert(err.message || 'Failed to send invitation request.');
+      showToast('error', 'Invitation Error', err.message || 'Failed to send invitation request.');
     }
   };
 
@@ -159,60 +174,104 @@ export default function Home() {
 
   // Handle Project Creation or Update
   const handleSaveProject = async (data: any) => {
-    if (data.id) {
-      await api.updateProject(data.id, data);
-    } else {
-      await api.createProject(data);
-    }
-    await loadAllData();
-  };
-
-  const handleDeleteProject = async (projectId: number, projectName: string) => {
-    if (!confirm(`Are you sure you want to delete project "${projectName}"? This will also delete all tasks associated with this project.`)) {
-      return;
-    }
     try {
-      await api.deleteProject(projectId);
-      if (selectedProjectId === projectId) {
-        setSelectedProjectId(null);
+      if (data.id) {
+        await api.updateProject(data.id, data);
+        showToast('success', 'Project Updated', `Project "${data.name}" updated successfully.`);
+      } else {
+        await api.createProject(data);
+        showToast('success', 'Project Created', `New project "${data.name}" created successfully.`);
       }
       await loadAllData();
     } catch (err: any) {
-      alert(err.message || 'Failed to delete project.');
+      showToast('error', 'Project Save Error', err.message || 'Failed to save project.');
     }
+  };
+
+  const handleDeleteProject = (projectId: number, projectName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Project Warning',
+      message: `Are you sure you want to delete project "${projectName}"? This action cannot be undone and will delete all associated tasks.`,
+      confirmText: 'Delete Project',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.deleteProject(projectId);
+          if (selectedProjectId === projectId) {
+            setSelectedProjectId(null);
+          }
+          await loadAllData();
+          showToast('warning', 'Project Deleted', `Project "${projectName}" and its tasks were deleted.`);
+        } catch (err: any) {
+          showToast('error', 'Delete Failed', err.message || 'Failed to delete project.');
+        }
+      },
+      onCancel: () => setConfirmDialog(null),
+    });
   };
 
   // Handle Task Creation or Update
   const handleSaveTask = async (data: any) => {
-    if (data.id) {
-      await api.updateTask(data.id, data);
-    } else {
-      await api.createTask(data);
+    try {
+      if (data.id) {
+        await api.updateTask(data.id, data);
+        showToast('success', 'Task Updated', `Task "${data.title}" updated successfully.`);
+      } else {
+        await api.createTask(data);
+        showToast('success', 'Task Assigned', `Task "${data.title}" assigned successfully.`);
+      }
+      await loadAllData();
+    } catch (err: any) {
+      showToast('error', 'Task Save Error', err.message || 'Failed to save task.');
     }
-    await loadAllData();
   };
 
   // Handle Quick Status Update
   const handleUpdateStatus = async (taskId: number, newStatus: TaskStatus) => {
-    await api.updateTask(taskId, { status: newStatus });
-    await loadAllData();
-    if (selectedTaskForDetail && selectedTaskForDetail.id === taskId) {
-      setSelectedTaskForDetail((prev) => prev ? { ...prev, status: newStatus } : null);
+    try {
+      await api.updateTask(taskId, { status: newStatus });
+      await loadAllData();
+      if (selectedTaskForDetail && selectedTaskForDetail.id === taskId) {
+        setSelectedTaskForDetail((prev) => (prev ? { ...prev, status: newStatus } : null));
+      }
+      showToast('info', 'Status Updated', `Task status updated to ${newStatus.replace('_', ' ')}.`);
+    } catch (err: any) {
+      showToast('error', 'Update Failed', err.message || 'Failed to update status.');
     }
   };
 
   // Handle Delete Task
   const handleDeleteTask = async (taskId: number) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
-    await api.deleteTask(taskId);
-    await loadAllData();
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Task Warning',
+      message: 'Are you sure you want to delete this task? This action cannot be undone.',
+      confirmText: 'Delete Task',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          await api.deleteTask(taskId);
+          await loadAllData();
+          showToast('warning', 'Task Deleted', 'Task was deleted successfully.');
+        } catch (err: any) {
+          showToast('error', 'Delete Failed', err.message || 'Failed to delete task.');
+        }
+      },
+      onCancel: () => setConfirmDialog(null),
+    });
   };
 
   // Handle Create Team Member
   const handleCreateUser = async (userData: any) => {
-    await api.createUser(userData);
-    await refreshUsers();
-    await loadAllData();
+    try {
+      await api.createUser(userData);
+      await refreshUsers();
+      await loadAllData();
+      showToast('success', 'Team Member Added', `User "${userData.username}" created successfully.`);
+    } catch (err: any) {
+      showToast('error', 'Creation Error', err.message || 'Failed to add user.');
+    }
   };
 
   // Open Deadline Modal
@@ -1194,6 +1253,12 @@ export default function Home() {
         }}
         user={selectedUserForEdit}
         onSave={handleSaveUserProfile}
+      />
+
+      <ToastNotification
+        toasts={toasts}
+        onDismiss={dismissToast}
+        confirmDialog={confirmDialog}
       />
     </div>
   );
