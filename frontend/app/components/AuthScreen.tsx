@@ -6,14 +6,8 @@ import { Role } from '../types';
 import {
   Layers,
   Building2,
-  ShieldCheck,
-  UserCheck,
-  Lock,
-  Mail,
   User as UserIcon,
-  Briefcase,
   ArrowRight,
-  Sparkles,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
@@ -80,7 +74,6 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
         department: signupDepartment.trim(),
       });
       setSuccessMessage(`Account created as ${signupRole === 'ADMIN' ? 'Admin' : 'Team Member'}! Logging in...`);
-      // Auto login newly registered user
       await login(signupUsername.trim(), signupPassword.trim());
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -91,32 +84,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#2a040d] text-white flex items-center justify-center p-4 selection:bg-rose-800 selection:text-white">
+    <div className="min-h-screen bg-[#141d13] text-[#fefae0] flex items-center justify-center p-4 selection:bg-[#556b2f] selection:text-[#fefae0]">
       {/* Background Glow Overlay */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-rose-900/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-rose-950/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#386641]/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-[#283925]/40 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md bg-[#4c0519]/95 border border-rose-900/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
+      <div className="relative w-full max-w-md bg-[#1f2c1d]/95 border border-[#3c5638] rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
         {/* Header Branding */}
         <div className="text-center space-y-2">
-          <div className="h-12 w-12 mx-auto rounded-2xl bg-gradient-to-br from-rose-700 via-rose-900 to-rose-950 flex items-center justify-center shadow-xl shadow-rose-950/50 ring-1 ring-white/30">
-            <Layers className="h-7 w-7 text-white" />
+          <div className="h-12 w-12 mx-auto rounded-2xl bg-gradient-to-br from-[#386641] via-[#283925] to-[#141d13] flex items-center justify-center shadow-xl shadow-black/50 ring-1 ring-[#e9edc9]/30">
+            <Layers className="h-7 w-7 text-[#fefae0]" />
           </div>
           <div className="flex items-center justify-center gap-2">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">TeamSync</h1>
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-900/60 text-rose-200 border border-rose-700 uppercase tracking-wider flex items-center gap-1">
+            <h1 className="text-2xl font-extrabold text-[#fefae0] tracking-tight">TeamSync</h1>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#3c5638]/60 text-[#e9edc9] border border-[#556b2f] uppercase tracking-wider flex items-center gap-1">
               <Building2 className="w-2.5 h-2.5" /> MNC Enterprise
             </span>
           </div>
-          <p className="text-xs text-rose-200">
+          <p className="text-xs text-[#e9edc9]">
             Team Project & Task Management Suite
           </p>
         </div>
 
         {/* Tab Switcher: Login vs Sign Up */}
-        <div className="flex bg-[#3b0712] p-1 rounded-2xl border border-rose-900">
+        <div className="flex bg-[#141d13] p-1 rounded-2xl border border-[#3c5638]">
           <button
             type="button"
             onClick={() => {
@@ -126,8 +119,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
             }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'login'
-                ? 'bg-rose-800 text-white shadow-md'
-                : 'text-rose-300 hover:text-white'
+                ? 'bg-[#556b2f] text-[#fefae0] shadow-md'
+                : 'text-[#e9edc9] hover:text-[#fefae0]'
             }`}
           >
             Sign In
@@ -141,8 +134,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
             }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'signup'
-                ? 'bg-rose-800 text-white shadow-md'
-                : 'text-rose-300 hover:text-white'
+                ? 'bg-[#556b2f] text-[#fefae0] shadow-md'
+                : 'text-[#e9edc9] hover:text-[#fefae0]'
             }`}
           >
             Create Account
@@ -151,13 +144,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
 
         {/* Alerts */}
         {error && (
-          <div className="p-3 text-xs bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-xl flex items-center gap-2">
+          <div className="p-3 text-xs bg-rose-950/60 text-rose-200 border border-rose-800 rounded-xl flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
             <span>{error}</span>
           </div>
         )}
         {successMessage && (
-          <div className="p-3 text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-xl flex items-center gap-2">
+          <div className="p-3 text-xs bg-[#283925] text-[#e9edc9] border border-[#556b2f] rounded-xl flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
             <span>{successMessage}</span>
           </div>
@@ -167,177 +160,121 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
         {activeTab === 'login' && (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
                 Username / Email
               </label>
               <div className="relative">
-                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#e9edc9]" />
                 <input
                   type="text"
                   required
                   placeholder="e.g. admin or alice"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-xl pl-10 pr-4 py-2.5 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full bg-[#141d13] text-[#fefae0] placeholder-[#e9edc9]/50 text-xs rounded-xl pl-10 pr-4 py-2.5 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
                 Password
               </label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 placeholder-slate-500 text-xs rounded-xl pl-10 pr-4 py-2.5 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full bg-[#141d13] text-[#fefae0] placeholder-[#e9edc9]/50 text-xs rounded-xl px-4 py-2.5 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
+              />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0] font-bold text-xs rounded-xl shadow-lg shadow-black/40 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span>{loading ? 'Authenticating...' : 'Sign In to Workspace'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-
-            {/* Enterprise SSO Login Options */}
-            <div className="pt-3 border-t border-slate-800/80 space-y-3">
-              <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-800" />
-                </div>
-                <span className="relative px-3 bg-slate-900 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                  Or continue with
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  className="p-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 flex items-center justify-center gap-2 transition shadow-sm"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path
-                      fill="#EA4335"
-                      d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"
-                    />
-                    <path
-                      fill="#4285F4"
-                      d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"
-                    />
-                  </svg>
-                  <span>Gmail</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="p-2.5 bg-slate-800/80 hover:bg-slate-800 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700/80 flex items-center justify-center gap-2 transition shadow-sm"
-                >
-                  <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
-                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.32c.67-.82 1.13-1.97.99-3.12-1 .04-2.19.67-2.88 1.48-.61.72-1.15 1.89-.99 3.01 1.12.09 2.22-.55 2.88-1.37z" />
-                  </svg>
-                  <span>Apple</span>
-                </button>
-              </div>
-            </div>
           </form>
         )}
 
-        {/* SIGN UP FORM WITH ROLE DROPDOWN */}
+        {/* SIGNUP FORM */}
         {activeTab === 'signup' && (
-          <form onSubmit={handleSignupSubmit} className="space-y-3.5">
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSignupSubmit} className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
+                Username <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. johndoe"
+                value={signupUsername}
+                onChange={(e) => setSignupUsername(e.target.value)}
+                className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
+                Email Address <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="john@teamsync.com"
+                value={signupEmail}
+                onChange={(e) => setSignupEmail(e.target.value)}
+                className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
                   First Name
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Sarah"
+                  placeholder="John"
                   value={signupFirstName}
                   onChange={(e) => setSignupFirstName(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
                   Last Name
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Connor"
+                  placeholder="Doe"
                   value={signupLastName}
                   onChange={(e) => setSignupLastName(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Username <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="sarahc"
-                  value={signupUsername}
-                  onChange={(e) => setSignupUsername(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Email <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="sarah@teamsync.com"
-                  value={signupEmail}
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* ROLE DROPDOWN: ADMIN vs TEAM MEMBER */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-indigo-300 mb-1 flex items-center gap-1">
-                  <span>Role Dropdown</span>
-                  <span className="text-rose-400">*</span>
+                <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
+                  Account Role <span className="text-rose-400">*</span>
                 </label>
                 <select
                   value={signupRole}
                   onChange={(e) => setSignupRole(e.target.value as Role)}
-                  className="w-full bg-slate-800 text-slate-100 font-bold text-xs rounded-xl px-3 py-2 border-2 border-indigo-500/60 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
                 >
-                  <option value="MEMBER">Team Member 👤</option>
+                  <option value="MEMBER">Team Member</option>
                   <option value="ADMIN">Admin 👑</option>
                 </select>
               </div>
-
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
                   Department
                 </label>
                 <input
@@ -345,13 +282,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
                   placeholder="Engineering"
                   value={signupDepartment}
                   onChange={(e) => setSignupDepartment(e.target.value)}
-                  className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
+              <label className="block text-xs font-semibold text-[#e9edc9] mb-1">
                 Password <span className="text-rose-400">*</span>
               </label>
               <input
@@ -361,14 +298,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
                 placeholder="At least 6 characters"
                 value={signupPassword}
                 onChange={(e) => setSignupPassword(e.target.value)}
-                className="w-full bg-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 border border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full bg-[#141d13] text-[#fefae0] text-xs rounded-xl px-3 py-2 border border-[#3c5638] focus:ring-2 focus:ring-[#556b2f] focus:outline-none"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-rose-800 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/40 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0] font-bold text-xs rounded-xl shadow-lg shadow-black/40 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span>{loading ? 'Creating Account...' : `Register as ${signupRole === 'ADMIN' ? 'Admin' : 'Team Member'}`}</span>
               <ArrowRight className="w-4 h-4" />
@@ -376,7 +313,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
           </form>
         )}
 
-        <div className="pt-4 border-t border-rose-900/60 text-center text-[10px] text-rose-200/90 font-medium">
+        <div className="pt-4 border-t border-[#3c5638] text-center text-[10px] text-[#e9edc9]/90 font-medium">
           Copyright © 2026 Rajkumar PR. All Rights Reserved.
         </div>
       </div>

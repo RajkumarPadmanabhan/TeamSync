@@ -342,7 +342,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#2a040d] text-white flex flex-col font-sans antialiased selection:bg-rose-800 selection:text-white">
+    <div className="min-h-screen bg-[#141d13] text-[#fefae0] flex flex-col font-sans antialiased selection:bg-[#556b2f] selection:text-[#fefae0]">
       {/* MNC Navigation Topbar */}
       <Navbar
         onRefresh={loadAllData}
@@ -1262,13 +1262,13 @@ export default function Home() {
       />
 
       {/* GLOBAL FOOTER WITH COPYRIGHT */}
-      <footer className="mt-auto bg-[#3b0712] border-t border-rose-900/60 py-4 px-6 text-center text-xs text-rose-200">
+      <footer className="mt-auto bg-[#1a2618] border-t border-[#3c5638] py-4 px-6 text-center text-xs text-[#e9edc9]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-white">TeamSync Platform</span>
-            <span className="text-[10px] bg-rose-900 px-2 py-0.5 rounded text-white font-mono font-bold">v6.0</span>
+            <span className="font-extrabold text-[#fefae0]">TeamSync Platform</span>
+            <span className="text-[10px] bg-[#3c5638] px-2 py-0.5 rounded text-[#fefae0] font-mono font-bold">v10.0</span>
           </div>
-          <p className="font-semibold text-white">
+          <p className="font-semibold text-[#fefae0]">
             Copyright © 2026 Rajkumar PR. All Rights Reserved.
           </p>
         </div>

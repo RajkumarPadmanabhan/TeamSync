@@ -50,26 +50,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-full lg:w-64 bg-[#3b0712]/90 backdrop-blur border-r border-rose-900/60 text-white p-4 flex flex-col justify-between shrink-0">
+    <aside className="w-full lg:w-64 bg-[#1a2618]/90 backdrop-blur border-r border-[#3c5638] text-[#fefae0] p-4 flex flex-col justify-between shrink-0">
       <div className="space-y-6">
         {/* Quick Action Buttons for Admin */}
         {isAdmin && (
           <div className="space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-rose-200/80 px-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#e9edc9]/80 px-2">
               Admin Quick Actions
             </p>
             <button
               onClick={openCreateTaskModal}
-              className="w-full bg-rose-800 hover:bg-rose-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-rose-950/40 flex items-center justify-center gap-2 transition ring-1 ring-white/20"
+              className="w-full bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0] font-bold text-xs py-2.5 px-3 rounded-xl shadow-lg shadow-black/40 flex items-center justify-center gap-2 transition ring-1 ring-white/20"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Create Task</span>
             </button>
             <button
               onClick={openCreateProjectModal}
-              className="w-full bg-[#581123] hover:bg-rose-900 text-white font-semibold text-xs py-2 px-3 rounded-xl border border-rose-800 flex items-center justify-center gap-2 transition"
+              className="w-full bg-[#283925] hover:bg-[#3c5638] text-[#fefae0] font-semibold text-xs py-2 px-3 rounded-xl border border-[#3c5638] flex items-center justify-center gap-2 transition"
             >
-              <FolderKanban className="w-3.5 h-3.5 text-rose-300" />
+              <FolderKanban className="w-3.5 h-3.5 text-[#e9edc9]" />
               <span>Create Project</span>
             </button>
           </div>
@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Main Navigation */}
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-rose-200/80 px-2 mb-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-[#e9edc9]/80 px-2 mb-2">
             Workspace Views
           </p>
           {navItems.map((item) => {
@@ -89,21 +89,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => setActiveTab(item.id as any)}
                 className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition ${
                   isActive
-                    ? 'bg-white text-rose-950 shadow-md font-extrabold border border-white'
-                    : 'hover:bg-rose-900/50 text-rose-100 hover:text-white'
+                    ? 'bg-[#fefae0] text-[#141d13] shadow-md font-extrabold border border-[#fefae0]'
+                    : 'hover:bg-[#283925]/60 text-[#e9edc9] hover:text-[#fefae0]'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-rose-950' : 'text-rose-300'}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-[#141d13]' : 'text-[#e9edc9]'}`} />
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${item.badge === 'New' ? 'bg-rose-900 text-white border-white animate-pulse' : 'bg-rose-950 text-rose-200 border-rose-800'}`}>
+                  <span className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded border ${item.badge === 'New' ? 'bg-[#556b2f] text-[#fefae0] border-[#e9edc9] animate-pulse' : 'bg-[#141d13] text-[#e9edc9] border-[#3c5638]'}`}>
                     {item.badge}
                   </span>
                 )}
                 {item.count !== undefined && item.count > 0 && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold ${isActive ? 'bg-rose-950 text-white' : 'bg-[#581123] text-white border border-rose-800'}`}>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-bold ${isActive ? 'bg-[#141d13] text-[#fefae0]' : 'bg-[#283925] text-[#fefae0] border border-[#3c5638]'}`}>
                     {item.count}
                   </span>
                 )}
@@ -113,14 +113,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Project Selector Filter */}
-        <div className="pt-2 border-t border-rose-900/60">
+        <div className="pt-2 border-t border-[#3c5638]">
           <div className="flex items-center justify-between px-2 mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-rose-200/80">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#e9edc9]/80">
               Active Projects
             </p>
             <button
               onClick={() => setSelectedProjectId(null)}
-              className={`text-[10px] hover:underline font-semibold ${selectedProjectId === null ? 'text-white underline font-bold' : 'text-rose-300'}`}
+              className={`text-[10px] hover:underline font-semibold ${selectedProjectId === null ? 'text-[#fefae0] underline font-bold' : 'text-[#e9edc9]'}`}
             >
               All Projects
             </button>
@@ -139,12 +139,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }}
                   className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition ${
                     isSelected
-                      ? 'bg-white text-rose-950 font-bold'
-                      : 'hover:bg-rose-900/40 text-rose-200 hover:text-white'
+                      ? 'bg-[#fefae0] text-[#141d13] font-bold'
+                      : 'hover:bg-[#283925]/60 text-[#e9edc9] hover:text-[#fefae0]'
                   }`}
                 >
                   <div className="truncate flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${proj.status === 'ACTIVE' ? 'bg-emerald-400' : proj.status === 'PLANNING' ? 'bg-rose-300' : 'bg-rose-800'}`} />
+                    <div className={`w-2 h-2 rounded-full ${proj.status === 'ACTIVE' ? 'bg-[#a3b18a]' : proj.status === 'PLANNING' ? 'bg-[#e9edc9]' : 'bg-[#3c5638]'}`} />
                     <span className="truncate">{proj.name}</span>
                   </div>
                   <ChevronRight className="w-3 h-3 shrink-0" />
@@ -156,24 +156,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Role Footer Info & Copyright */}
-      <div className="pt-4 border-t border-rose-900/60 mt-6 space-y-3">
-        <div className="p-2.5 rounded-xl bg-[#581123] border border-rose-800 flex items-center gap-2 text-[11px]">
+      <div className="pt-4 border-t border-[#3c5638] mt-6 space-y-3">
+        <div className="p-2.5 rounded-xl bg-[#283925] border border-[#3c5638] flex items-center gap-2 text-[11px]">
           {isAdmin ? (
-            <ShieldAlert className="w-4 h-4 text-white shrink-0" />
+            <ShieldAlert className="w-4 h-4 text-[#fefae0] shrink-0" />
           ) : (
-            <Users className="w-4 h-4 text-rose-200 shrink-0" />
+            <Users className="w-4 h-4 text-[#e9edc9] shrink-0" />
           )}
           <div>
-            <p className="font-bold text-white">
+            <p className="font-bold text-[#fefae0]">
               Role: {isAdmin ? 'Admin 👑' : 'Team Member 👤'}
             </p>
-            <p className="text-[10px] text-rose-200">
+            <p className="text-[10px] text-[#e9edc9]">
               {isAdmin ? 'Full Project & Task Management' : 'Assigned Tasks & Updates'}
             </p>
           </div>
         </div>
 
-        <div className="text-[10px] text-center text-rose-200/90 font-medium">
+        <div className="text-[10px] text-center text-[#e9edc9]/90 font-medium">
           Copyright © 2026 Rajkumar PR.<br/>All Rights Reserved.
         </div>
       </div>
