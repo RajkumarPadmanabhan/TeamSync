@@ -29,20 +29,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const token = api.getToken();
       if (token) {
+        // Retrieve profile of strictly logged in / signed up user
         const currentUser = await api.getMe();
         setUser(currentUser);
         const usersList = await api.getUsers();
         setAllUsers(usersList);
       } else {
-        // Automatically attempt login with default admin if token absent for initial load
-        const res = await api.login('admin', 'password123');
-        setUser(res.user);
-        const usersList = await api.getUsers();
-        setAllUsers(usersList);
+        // Strictly unauthenticated: force user to sign up or log in
+        setUser(null);
       }
       setError(null);
     } catch (err: any) {
       setUser(null);
+      api.setToken(null);
     } finally {
       setLoading(false);
     }
