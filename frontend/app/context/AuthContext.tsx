@@ -29,10 +29,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       const token = api.getToken();
       if (token) {
-        const currentUser = await api.getMe();
-        setUser(currentUser);
-        const usersList = await api.getUsers();
-        setAllUsers(usersList);
+        // Attempt to fetch fresh profile from API, falling back to cached user in localStorage
+        try {
+          const currentUser = await api.getMe();
+          setUser(currentUser);
+        } catch {
+          const cached = api.getCachedUser();
+          if (cached) {
+            setUser(cached);
+          } else {
+            setUser(null);
+            api.setToken(null);
+          }
+        }
+        if (api.getToken()) {
+          try {
+            const usersList = await api.getUsers();
+            setAllUsers(usersList);
+          } catch (err) {
+            console.error('Error loading users:', err);
+          }
+        }
       } else {
         setUser(null);
         setAllUsers([]);
@@ -67,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       const res = await api.login(username, password);
       setUser(res.user);
+      api.setUser(res.user);
       const usersList = await api.getUsers();
       setAllUsers(usersList);
     } catch (err: any) {
@@ -104,8 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     api.setToken(null);
+    api.setUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('teamsync_token');
+      localStorage.removeItem('teamsync_user');
       localStorage.clear();
       sessionStorage.clear();
       window.history.pushState(null, '', '/login');
