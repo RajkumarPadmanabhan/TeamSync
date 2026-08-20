@@ -9,7 +9,8 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   allUsers: User[];
-  loginAs: (username: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (userData: Partial<User> & { password: string }) => Promise<void>;
   logout: () => void;
   isAdmin: boolean;
   refreshUsers: () => Promise<void>;
@@ -23,37 +24,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCurrentUser = async () => {
+  const fetchSession = async () => {
     try {
       setLoading(true);
-      const currentUser = await api.getMe();
-      setUser(currentUser);
-      const usersList = await api.getUsers();
-      setAllUsers(usersList);
+      const token = api.getToken();
+      if (token) {
+        const currentUser = await api.getMe();
+        setUser(currentUser);
+        const usersList = await api.getUsers();
+        setAllUsers(usersList);
+      } else {
+        // Automatically attempt login with default admin if token absent for initial load
+        const res = await api.login('admin', 'password123');
+        setUser(res.user);
+        const usersList = await api.getUsers();
+        setAllUsers(usersList);
+      }
       setError(null);
     } catch (err: any) {
-      console.log('No active session, auto-logging in as Admin for demo preview.');
-      // Auto-login default demo user (admin)
-      await loginAs('admin');
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCurrentUser();
+    fetchSession();
   }, []);
 
-  const loginAs = async (username: string) => {
+  const login = async (username: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.login(username, 'password123');
+      const res = await api.login(username, password);
       setUser(res.user);
       const usersList = await api.getUsers();
       setAllUsers(usersList);
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Authentication failed. Please check credentials.');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (userData: Partial<User> & { password: string }) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await api.createUser(userData);
+      await refreshUsers();
+    } catch (err: any) {
+      setError(err.message || 'Registration failed.');
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -61,10 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUsers = async () => {
     try {
-      const usersList = await api.getUsers();
-      setAllUsers(usersList);
+      if (api.getToken()) {
+        const usersList = await api.getUsers();
+        setAllUsers(usersList);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error refreshing users list:', err);
     }
   };
 
@@ -82,7 +107,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         error,
         allUsers,
-        loginAs,
+        login,
+        register,
         logout,
         isAdmin,
         refreshUsers,
