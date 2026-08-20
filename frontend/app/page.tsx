@@ -409,9 +409,32 @@ export default function Home() {
                       <div key={proj.id} className="p-3.5 bg-slate-800/50 rounded-xl border border-slate-800 space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-bold text-slate-200">{proj.name}</span>
-                          <span className="font-mono text-indigo-400 font-bold">
-                            {proj.progress_percentage}%
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-indigo-400 font-bold">
+                              {proj.progress_percentage}%
+                            </span>
+                            {isAdmin && (
+                              <div className="flex items-center gap-1 pl-2 border-l border-slate-700/80">
+                                <button
+                                  onClick={() => {
+                                    setEditingProject(proj);
+                                    setIsProjectModalOpen(true);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition"
+                                  title="Edit project name & details"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProject(proj.id, proj.name)}
+                                  className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                                  title="Delete project"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* Progress Bar */}
