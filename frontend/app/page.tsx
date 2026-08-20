@@ -47,6 +47,7 @@ export default function Home() {
   // Active Tab View
   const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'tasks' | 'deadline-history' | 'team' | 'requests'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   // Data states
@@ -337,6 +338,18 @@ export default function Home() {
       year: 'numeric',
     });
   };
+
+  // Filtered Team Members
+  const filteredTeamMembers = allUsers.filter((u) => {
+    if (!teamSearchQuery.trim()) return true;
+    const q = teamSearchQuery.toLowerCase().trim();
+    const nameMatch = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase().includes(q);
+    const usernameMatch = u.username.toLowerCase().includes(q);
+    const emailMatch = u.email.toLowerCase().includes(q);
+    const deptMatch = (u.department || '').toLowerCase().includes(q);
+    const roleMatch = u.role.toLowerCase().includes(q);
+    return nameMatch || usernameMatch || emailMatch || deptMatch || roleMatch;
+  });
 
   return (
     <div className={`min-h-screen flex flex-col font-sans antialiased transition-colors ${
@@ -1255,19 +1268,19 @@ export default function Home() {
           {/* TAB 6: TEAM DIRECTORY */}
           {activeTab === 'team' && (
             <div className="space-y-6 animate-in fade-in">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h1 className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-[#fefae0]' : 'text-[#1b2819]'}`}>
                     Team Directory
                   </h1>
                   <p className={`text-xs mt-0.5 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>
-                    Team members, roles, departments, and onboarding
+                    Search login/signup members, roles, departments, and project assignments
                   </p>
                 </div>
                 {isAdmin && (
                   <button
                     onClick={() => setIsTeamModalOpen(true)}
-                    className={`text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition ${
+                    className={`text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition shrink-0 ${
                       isDark
                         ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
                         : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
@@ -1279,122 +1292,174 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {allUsers.map((u) => (
-                  <div
-                    key={u.id}
-                    className={`rounded-2xl p-5 border flex items-start gap-3 transition ${
+              {/* Dedicated Search Bar for Team Directory */}
+              <div className={`p-3 rounded-2xl border text-xs flex flex-col sm:flex-row sm:items-center gap-3 ${
+                isDark
+                  ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                  : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+              }`}>
+                <div className="relative flex-1">
+                  <Search className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`} />
+                  <input
+                    type="text"
+                    placeholder="Search login/signup member by name, username, email, department, or role..."
+                    value={teamSearchQuery}
+                    onChange={(e) => setTeamSearchQuery(e.target.value)}
+                    className={`w-full text-xs rounded-xl pl-10 pr-8 py-2.5 border focus:outline-none transition ${
                       isDark
-                        ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
-                        : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                        ? 'bg-[#141d13] text-[#fefae0] placeholder-[#e9edc9]/60 border-[#3c5638] focus:ring-2 focus:ring-[#556b2f]'
+                        : 'bg-[#faf8f3] text-[#1b2819] placeholder-[#556b2f]/60 border-[#d4ddcf] focus:ring-2 focus:ring-[#385233]'
                     }`}
-                  >
-                    <img
-                      src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name || u.username)}&background=556b2f&color=fefae0`}
-                      alt={u.username}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-[#556b2f]/40"
-                    />
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-sm">
-                          {u.first_name ? `${u.first_name} ${u.last_name}` : u.username}
-                        </h4>
-                        <div className="flex items-center gap-1">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                            u.role === 'ADMIN'
-                              ? isDark
-                                ? 'bg-[#fefae0] text-[#141d13] border-[#fefae0]'
-                                : 'bg-[#1b2819] text-[#fefae0] border-[#1b2819]'
-                              : isDark
-                                ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
-                                : 'bg-[#e9edc9] text-[#1b2819] border-[#385233]'
-                          }`}>
-                            {u.role}
-                          </span>
-                          {(isAdmin || u.id === user?.id) && (
-                            <button
-                              onClick={() => {
-                                setSelectedUserForEdit(u);
-                                setIsProfileModalOpen(true);
-                              }}
-                              className="p-1 hover:opacity-75 transition"
-                              title="Edit user profile info (email, name, role, department)"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <p className={`text-xs font-mono ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>{u.email}</p>
-                      <p className={`text-[11px] mb-2 ${isDark ? 'text-[#e9edc9]/80' : 'text-[#556b2f]'}`}>{u.department || 'General'}</p>
+                  />
+                  {teamSearchQuery.trim() && (
+                    <button
+                      onClick={() => setTeamSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold hover:opacity-75"
+                      title="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
 
-                      {/* Admin Project Request Controls */}
-                      {isAdmin && u.id !== user?.id && (
-                        <div className={`pt-2 border-t space-y-2 ${isDark ? 'border-[#3c5638]' : 'border-[#e2e8f0]'}`}>
-                          <div className="flex items-center gap-1.5 text-[11px]">
-                            <select
-                              id={`project-select-${u.id}`}
-                              className={`text-[11px] rounded-lg px-2 py-1 border focus:outline-none flex-1 ${
-                                isDark
-                                  ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
-                                  : 'bg-white text-[#1b2819] border-[#d4ddcf]'
-                              }`}
-                              defaultValue={projects[0]?.id || ''}
-                            >
-                              {projects.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              onClick={() => {
-                                const selectEl = document.getElementById(`project-select-${u.id}`) as HTMLSelectElement;
-                                const projId = Number(selectEl?.value);
-                                if (projId) {
-                                  handleSendProjectInvitation(projId, u.id);
-                                }
-                              }}
-                              className={`px-2.5 py-1 font-bold text-[10px] rounded-lg transition shadow ${
-                                isDark
-                                  ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
-                                  : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
-                              }`}
-                              title="Send invitation request to join project"
-                            >
-                              Send Request
-                            </button>
-                          </div>
-
-                          {/* Render Existing Invitation Badges */}
-                          {invitations
-                            .filter((inv) => inv.invited_user === u.id)
-                            .map((inv) => (
-                              <div key={inv.id} className={`flex items-center justify-between text-[10px] px-2 py-1 rounded border ${
-                                isDark
-                                  ? 'bg-[#141d13] border-[#3c5638]'
-                                  : 'bg-[#faf8f3] border-[#e2e8f0]'
-                              }`}>
-                                <span className="truncate opacity-75">{inv.project_detail?.name}:</span>
-                                {inv.status === 'PENDING' && <span className="font-bold text-amber-500">⌛ Pending</span>}
-                                {inv.status === 'ACCEPTED' && <span className="font-bold text-[#386641]">✅ Joined</span>}
-                                {inv.status === 'REJECTED' && (
-                                  <button
-                                    onClick={() => handleSendProjectInvitation(inv.project, u.id)}
-                                    className="font-bold text-rose-500 hover:underline cursor-pointer"
-                                    title="Click to re-send invitation request"
-                                  >
-                                    ❌ Rejected (Re-send)
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
+                    isDark ? 'bg-[#141d13] border-[#3c5638] text-[#e9edc9]' : 'bg-[#faf8f3] border-[#d4ddcf] text-[#556b2f]'
+                  }`}>
+                    Showing {filteredTeamMembers.length} of {allUsers.length} Members
+                  </span>
+                </div>
               </div>
+
+              {/* Members Grid or Empty Search Result */}
+              {filteredTeamMembers.length === 0 ? (
+                <div className={`p-12 text-center rounded-2xl border space-y-2 ${
+                  isDark
+                    ? 'bg-[#1f2c1d] border-[#3c5638] text-[#e9edc9]'
+                    : 'bg-white border-[#d4ddcf] text-[#556b2f] shadow-sm'
+                }`}>
+                  <Users className="w-8 h-8 opacity-50 mx-auto" />
+                  <p className="text-sm font-semibold">No member found matching &quot;{teamSearchQuery}&quot;</p>
+                  <p className="text-xs opacity-75">Try searching by username, email, department, or role</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredTeamMembers.map((u) => (
+                    <div
+                      key={u.id}
+                      className={`rounded-2xl p-5 border flex items-start gap-3 transition ${
+                        isDark
+                          ? 'bg-[#1f2c1d] border-[#3c5638] text-[#fefae0]'
+                          : 'bg-white border-[#d4ddcf] text-[#1b2819] shadow-sm'
+                      }`}
+                    >
+                      <img
+                        src={u.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name || u.username)}&background=556b2f&color=fefae0`}
+                        alt={u.username}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-[#556b2f]/40"
+                      />
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm">
+                            {u.first_name ? `${u.first_name} ${u.last_name}` : u.username}
+                          </h4>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                              u.role === 'ADMIN'
+                                ? isDark
+                                  ? 'bg-[#fefae0] text-[#141d13] border-[#fefae0]'
+                                  : 'bg-[#1b2819] text-[#fefae0] border-[#1b2819]'
+                                : isDark
+                                  ? 'bg-[#3c5638] text-[#fefae0] border-[#556b2f]'
+                                  : 'bg-[#e9edc9] text-[#1b2819] border-[#385233]'
+                            }`}>
+                              {u.role}
+                            </span>
+                            {(isAdmin || u.id === user?.id) && (
+                              <button
+                                onClick={() => {
+                                  setSelectedUserForEdit(u);
+                                  setIsProfileModalOpen(true);
+                                }}
+                                className="p-1 hover:opacity-75 transition"
+                                title="Edit user profile info (email, name, role, department)"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className={`text-xs font-mono ${isDark ? 'text-[#e9edc9]' : 'text-[#556b2f]'}`}>{u.email}</p>
+                        <p className={`text-[11px] mb-2 ${isDark ? 'text-[#e9edc9]/80' : 'text-[#556b2f]'}`}>{u.department || 'General'}</p>
+
+                        {/* Admin Project Request Controls */}
+                        {isAdmin && u.id !== user?.id && (
+                          <div className={`pt-2 border-t space-y-2 ${isDark ? 'border-[#3c5638]' : 'border-[#e2e8f0]'}`}>
+                            <div className="flex items-center gap-1.5 text-[11px]">
+                              <select
+                                id={`project-select-${u.id}`}
+                                className={`text-[11px] rounded-lg px-2 py-1 border focus:outline-none flex-1 ${
+                                  isDark
+                                    ? 'bg-[#141d13] text-[#fefae0] border-[#3c5638]'
+                                    : 'bg-white text-[#1b2819] border-[#d4ddcf]'
+                                }`}
+                                defaultValue={projects[0]?.id || ''}
+                              >
+                                {projects.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => {
+                                  const selectEl = document.getElementById(`project-select-${u.id}`) as HTMLSelectElement;
+                                  const projId = Number(selectEl?.value);
+                                  if (projId) {
+                                    handleSendProjectInvitation(projId, u.id);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 font-bold text-[10px] rounded-lg transition shadow ${
+                                  isDark
+                                    ? 'bg-[#556b2f] hover:bg-[#606c38] text-[#fefae0]'
+                                    : 'bg-[#385233] hover:bg-[#283b24] text-[#fefae0]'
+                                }`}
+                                title="Send invitation request to join project"
+                              >
+                                Send Request
+                              </button>
+                            </div>
+
+                            {/* Render Existing Invitation Badges */}
+                            {invitations
+                              .filter((inv) => inv.invited_user === u.id)
+                              .map((inv) => (
+                                <div key={inv.id} className={`flex items-center justify-between text-[10px] px-2 py-1 rounded border ${
+                                  isDark
+                                    ? 'bg-[#141d13] border-[#3c5638]'
+                                    : 'bg-[#faf8f3] border-[#e2e8f0]'
+                                }`}>
+                                  <span className="truncate opacity-75">{inv.project_detail?.name}:</span>
+                                  {inv.status === 'PENDING' && <span className="font-bold text-amber-500">⌛ Pending</span>}
+                                  {inv.status === 'ACCEPTED' && <span className="font-bold text-[#386641]">✅ Joined</span>}
+                                  {inv.status === 'REJECTED' && (
+                                    <button
+                                      onClick={() => handleSendProjectInvitation(inv.project, u.id)}
+                                      className="font-bold text-rose-500 hover:underline cursor-pointer"
+                                      title="Click to re-send invitation request"
+                                    >
+                                      ❌ Rejected (Re-send)
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </main>
