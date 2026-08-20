@@ -139,10 +139,31 @@ export default function Home() {
     return <AuthScreen onSuccess={loadAllData} />;
   }
 
-  // Handle Project Creation
-  const handleCreateProject = async (data: any) => {
-    await api.createProject(data);
+  // Handle Project Creation or Update
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  const handleSaveProject = async (data: any) => {
+    if (data.id) {
+      await api.updateProject(data.id, data);
+    } else {
+      await api.createProject(data);
+    }
     await loadAllData();
+  };
+
+  const handleDeleteProject = async (projectId: number, projectName: string) => {
+    if (!confirm(`Are you sure you want to delete project "${projectName}"? This will also delete all tasks associated with this project.`)) {
+      return;
+    }
+    try {
+      await api.deleteProject(projectId);
+      if (selectedProjectId === projectId) {
+        setSelectedProjectId(null);
+      }
+      await loadAllData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete project.');
+    }
   };
 
   // Handle Task Creation or Update
@@ -263,7 +284,10 @@ export default function Home() {
           projects={projects}
           selectedProjectId={selectedProjectId}
           setSelectedProjectId={setSelectedProjectId}
-          openCreateProjectModal={() => setIsProjectModalOpen(true)}
+          openCreateProjectModal={() => {
+            setEditingProject(null);
+            setIsProjectModalOpen(true);
+          }}
           openCreateTaskModal={() => {
             setEditingTask(null);
             setIsTaskModalOpen(true);
@@ -460,9 +484,32 @@ export default function Home() {
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${proj.status === 'ACTIVE' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : proj.status === 'PLANNING' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                           {proj.status}
                         </span>
-                        <span className="text-xs font-bold text-indigo-400 font-mono">
-                          {proj.progress_percentage}% Done
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-indigo-400 font-mono">
+                            {proj.progress_percentage}% Done
+                          </span>
+                          {isAdmin && (
+                            <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
+                              <button
+                                onClick={() => {
+                                  setEditingProject(proj);
+                                  setIsProjectModalOpen(true);
+                                }}
+                                className="p-1 text-slate-400 hover:text-indigo-300 hover:bg-slate-800 rounded-lg transition"
+                                title="Edit project name & details"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProject(proj.id, proj.name)}
+                                className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition"
+                                title="Delete project"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <h3 className="text-base font-extrabold text-white">{proj.name}</h3>
@@ -972,9 +1019,13 @@ export default function Home() {
       {/* MODALS */}
       <ProjectModal
         isOpen={isProjectModalOpen}
-        onClose={() => setIsProjectModalOpen(false)}
-        onSubmit={handleCreateProject}
+        onClose={() => {
+          setIsProjectModalOpen(false);
+          setEditingProject(null);
+        }}
+        onSubmit={handleSaveProject}
         users={allUsers}
+        editingProject={editingProject}
       />
 
       <TaskModal

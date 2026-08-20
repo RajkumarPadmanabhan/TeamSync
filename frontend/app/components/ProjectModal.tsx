@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import { User, ProjectStatus } from '../types';
-import { FolderKanban, X, Calendar, Users, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, ProjectStatus, Project } from '../types';
+import { FolderKanban, X } from 'lucide-react';
 
 interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
+    id?: number;
     name: string;
     description: string;
     status: ProjectStatus;
@@ -16,6 +17,7 @@ interface ProjectModalProps {
     member_ids: number[];
   }) => Promise<void>;
   users: User[];
+  editingProject?: Project | null;
 }
 
 export const ProjectModal: React.FC<ProjectModalProps> = ({
@@ -23,6 +25,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   onClose,
   onSubmit,
   users,
+  editingProject,
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -32,6 +35,25 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editingProject) {
+      setName(editingProject.name || '');
+      setDescription(editingProject.description || '');
+      setStatus(editingProject.status || 'ACTIVE');
+      setStartDate(editingProject.start_date ? editingProject.start_date.split('T')[0] : '');
+      setEndDate(editingProject.end_date ? editingProject.end_date.split('T')[0] : '');
+      setSelectedMemberIds(editingProject.members || []);
+    } else {
+      setName('');
+      setDescription('');
+      setStatus('ACTIVE');
+      setStartDate('');
+      setEndDate('');
+      setSelectedMemberIds([]);
+    }
+    setError(null);
+  }, [editingProject, isOpen]);
 
   if (!isOpen) return null;
 
@@ -51,6 +73,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
       setLoading(true);
       setError(null);
       await onSubmit({
+        id: editingProject ? editingProject.id : undefined,
         name: name.trim(),
         description: description.trim(),
         status,
@@ -58,13 +81,9 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
         end_date: endDate || undefined,
         member_ids: selectedMemberIds,
       });
-      // reset
-      setName('');
-      setDescription('');
-      setSelectedMemberIds([]);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create project.');
+      setError(err.message || 'Failed to save project.');
     } finally {
       setLoading(false);
     }
@@ -80,8 +99,12 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
               <FolderKanban className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-white">Create New Project</h3>
-              <p className="text-xs text-slate-400">Initialize team workspace & set initial members</p>
+              <h3 className="text-base font-extrabold text-white">
+                {editingProject ? 'Edit Project Details' : 'Create New Project'}
+              </h3>
+              <p className="text-xs text-slate-400">
+                {editingProject ? 'Update name, description, status, or member assignments' : 'Initialize team workspace & set initial members'}
+              </p>
             </div>
           </div>
           <button
@@ -220,7 +243,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
               disabled={loading}
               className="px-5 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-lg shadow-indigo-600/20 transition disabled:opacity-50"
             >
-              {loading ? 'Creating Project...' : 'Create Project'}
+              {loading ? (editingProject ? 'Updating Project...' : 'Creating Project...') : (editingProject ? 'Save Changes' : 'Create Project')}
             </button>
           </div>
         </form>
