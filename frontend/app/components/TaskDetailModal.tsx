@@ -18,7 +18,8 @@ import {
   Upload,
   FileText,
   CheckCircle2,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 
 interface TaskDetailModalProps {
@@ -27,6 +28,7 @@ interface TaskDetailModalProps {
   task: Task | null;
   onUpdateStatus: (taskId: number, newStatus: TaskStatus) => Promise<void>;
   openDeadlineHistory: (task: Task) => void;
+  onDeleteTask?: (taskId: number) => Promise<void>;
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
@@ -35,8 +37,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
   task,
   onUpdateStatus,
   openDeadlineHistory,
+  onDeleteTask,
 }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'comments' | 'activity' | 'attachments'>('comments');
 
   const [comments, setComments] = useState<TaskComment[]>([]);
@@ -185,12 +188,29 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </span>
             <h2 className="text-lg font-extrabold text-white mt-1">{task.title}</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && onDeleteTask && (
+              <button
+                onClick={async () => {
+                  if (confirm('Are you sure you want to delete this task? This will permanently remove the task for all users including the assigned team member.')) {
+                    await onDeleteTask(task.id);
+                    onClose();
+                  }
+                }}
+                className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
+                title="Delete Task Permanently"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Task</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Body */}

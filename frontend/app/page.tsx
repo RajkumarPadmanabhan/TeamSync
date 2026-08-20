@@ -802,6 +802,7 @@ export default function Home() {
         task={selectedTaskForDetail}
         onUpdateStatus={handleUpdateStatus}
         openDeadlineHistory={openDeadlineHistoryModal}
+        onDeleteTask={handleDeleteTask}
       />
 
       <TeamRosterModal
