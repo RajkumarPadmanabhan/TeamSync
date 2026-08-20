@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.core.mail import send_mail
 from .models import Project
 from .serializers import ProjectSerializer
 from django.contrib.auth import get_user_model
@@ -110,8 +111,29 @@ class ProjectInvitationViewSet(viewsets.ModelViewSet):
             }
         )
 
+        # EMAIL NOTIFICATION: Notify Team Member that Admin invited them to join a project
+        if user_to_invite.email:
+            try:
+                subject = f"Project Invitation: Admin invited you to join '{project.name}'"
+                body = (
+                    f"Hello {user_to_invite.first_name or user_to_invite.username},\n\n"
+                    f"Admin ({request.user.get_full_name() or request.user.username}) is trying to add you into a new project team: '{project.name}'.\n\n"
+                    f"Message from Admin: \"{message}\"\n\n"
+                    f"Please log in to TeamSync and check your 'Project Requests' section to approve or accept the request to join the project.\n\n"
+                    f"Best regards,\nTeamSync Admin Team"
+                )
+                send_mail(
+                    subject=subject,
+                    message=body,
+                    from_email='noreply@teamsync.com',
+                    recipient_list=[user_to_invite.email],
+                    fail_silently=True
+                )
+            except Exception as e:
+                print("Email dispatch error:", e)
+
         return Response({
-            'detail': f'Invitation request sent to {user_to_invite.username} successfully!',
+            'detail': f'Invitation request sent to {user_to_invite.username} successfully! Email notification dispatched.',
             'invitation': ProjectInvitationSerializer(invitation).data
         }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 

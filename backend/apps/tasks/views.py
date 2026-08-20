@@ -75,18 +75,28 @@ class TaskViewSet(viewsets.ModelViewSet):
                 reason="Initial task creation deadline"
             )
 
-        # Email Notification for Assignee
+        # Email Notification for Assignee when new task is created
         if task.assigned_to and task.assigned_to.email:
             try:
+                subject = f"New Task Assigned: {task.title} ({task.priority} Priority)"
+                body = (
+                    f"Hello {task.assigned_to.first_name or task.assigned_to.username},\n\n"
+                    f"You have been assigned a new task: '{task.title}' under project '{task.project.name}'.\n\n"
+                    f"Task Priority: {task.priority}\n"
+                    f"Deadline: {task.deadline}\n"
+                    f"Description: {task.description or 'No description provided.'}\n\n"
+                    f"Please log in to TeamSync to review your task details and track progress.\n\n"
+                    f"Best regards,\nTeamSync Admin Team"
+                )
                 send_mail(
-                    subject=f"[TeamSync] New Task Assigned: {task.title}",
-                    message=f"Hello {task.assigned_to.first_name or task.assigned_to.username},\n\nYou have been assigned a new task: '{task.title}' under project '{task.project.name}'.\n\nPriority: {task.priority}\nDeadline: {task.deadline}\n\nLog in to TeamSync to view details.",
-                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    subject=subject,
+                    message=body,
+                    from_email='noreply@teamsync.com',
                     recipient_list=[task.assigned_to.email],
                     fail_silently=True
                 )
             except Exception as e:
-                print("Email notification error:", e)
+                print("Task assignment email notification error:", e)
 
     def perform_update(self, serializer):
         user = self.request.user
