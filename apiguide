@@ -1,56 +1,112 @@
-# TeamSync REST API Integration Documentation (`apiguide`)
+# TeamSync REST API Integration Guide & Endpoints Reference (`apiguide`)
 
 Base URL: http://localhost:8000/api
 Authentication Standard: JSON Web Token (JWT) Bearer Authentication
 Content-Type: application/json (or multipart/form-data for file uploads)
 
 ================================================================================
-GLOBAL REQUEST HEADERS
+GLOBAL API REQUEST & RESPONSE CONVENTIONS
 ================================================================================
+Request Headers:
 - Content-Type: application/json (or multipart/form-data for uploads)
 - Authorization: Bearer <access_token>
 
-================================================================================
-COMMON HTTP STATUS CODES
-================================================================================
-- 200 OK: Request succeeded.
+HTTP Response Status Codes:
+- 200 OK: Request succeeded. Returns requested object or list.
 - 201 Created: Resource created successfully.
-- 400 Bad Request: Validation error or missing required fields.
+- 204 No Content: Resource deleted successfully.
+- 400 Bad Request: Validation failure or missing fields.
 - 401 Unauthorized: Invalid or missing JWT token.
-- 403 Forbidden: Insufficient role permissions.
-- 404 Not Found: Resource ID not found.
+- 403 Forbidden: Insufficient role permissions (e.g. Member creating project).
+- 404 Not Found: Targeted resource ID does not exist.
 
 ================================================================================
-1. AUTHENTICATION ENDPOINTS (/api/auth/)
+1. AUTHENTICATION & USER MANAGEMENT (/api/auth/)
 ================================================================================
-1.1 LOGIN: POST /api/auth/login/
-1.2 REGISTER: POST /api/auth/register/
-1.3 CURRENT USER: GET /api/auth/me/
-1.4 LIST USERS: GET /api/auth/users/
+1.1 USER LOGIN & JWT RETRIEVAL: POST /api/auth/login/
+Headers: Content-Type: application/json
+Request Body:
+  { "username": "admin@teamsync.com", "password": "password123" }
+Success Response (200 OK):
+  { "access": "eyJhb...", "refresh": "eyJhb...", "user": { "id": 1, "role": "ADMIN", "email": "admin@teamsync.com" } }
+Error Response (401 Unauthorized):
+  { "detail": "No active account found with the given credentials" }
+Error Response (400 Bad Request):
+  { "username": ["This field is required."] }
+
+1.2 USER REGISTRATION: POST /api/auth/register/
+Headers: Content-Type: application/json
+Request Body:
+  { "username": "sarahc", "email": "sarah@teamsync.com", "password": "password123", "role": "ADMIN", "department": "Infra" }
+Success Response (201 Created):
+  { "id": 5, "username": "sarahc", "email": "sarah@teamsync.com", "role": "ADMIN" }
+Error Response (400 Bad Request):
+  { "username": ["A user with that username already exists."] }
+
+1.3 GET CURRENT USER PROFILE: GET /api/auth/me/
+Headers: Authorization: Bearer <access_token>
+Success Response (200 OK):
+  { "id": 1, "username": "admin", "role": "ADMIN", "email": "admin@teamsync.com" }
+
+1.4 LIST USERS / DIRECTORY: GET /api/auth/users/
+Headers: Authorization: Bearer <access_token>
+Success Response (200 OK): Array of User objects.
 
 ================================================================================
-2. PROJECT ENDPOINTS (/api/projects/)
+2. PROJECT MANAGEMENT (/api/projects/)
 ================================================================================
-2.1 LIST PROJECTS: GET /api/projects/
-2.2 CREATE PROJECT: POST /api/projects/
-2.3 MEMBER MANAGEMENT: POST /api/projects/{id}/add_member/
+2.1 LIST PROJECTS & PROGRESS METRICS: GET /api/projects/
+Headers: Authorization: Bearer <access_token>
+Success Response (200 OK):
+  [ { "id": 1, "name": "Enterprise Cloud", "progress_percentage": 67, "total_tasks": 3, "completed_tasks": 2 } ]
+
+2.2 CREATE PROJECT: POST /api/projects/ (Admin Only)
+Headers: Content-Type: application/json, Authorization: Bearer <admin_token>
+Request Body:
+  { "name": "Mobile Banking 2.0", "description": "Biometric UI", "status": "ACTIVE", "member_ids": [2, 3] }
+Success Response (201 Created):
+  { "id": 2, "name": "Mobile Banking 2.0", "progress_percentage": 0, "members": [1, 2, 3] }
+Error Response (403 Forbidden):
+  { "detail": "You do not have permission to perform this action." }
+
+2.3 ADD PROJECT MEMBER: POST /api/projects/{id}/add_member/ (Admin Only)
+Request Body: { "user_id": 4 }
+Success Response (200 OK): { "detail": "User added to project successfully.", "project": { ... } }
 
 ================================================================================
-3. TASK ENDPOINTS & OPTIONAL ENHANCEMENTS (/api/tasks/)
+3. TASK MANAGEMENT & AUDIT TRAIL (/api/tasks/)
 ================================================================================
-3.1 LIST & FILTER TASKS: GET /api/tasks/?project=1&status=IN_PROGRESS&priority=URGENT&assigned_to_me=true
-3.2 CREATE TASK: POST /api/tasks/
-3.3 UPDATE TASK & DEADLINE AUDIT: PATCH /api/tasks/{id}/
-    Behavior: Logs DeadlineHistory, records TaskActivity, sends Email notification to assignee.
+3.1 LIST & FILTER TASKS: GET /api/tasks/?project=1&assigned_to_me=true&status=IN_PROGRESS&priority=URGENT
+Headers: Authorization: Bearer <access_token>
+Success Response (200 OK): Array of Task objects.
 
-3.4 TASK DEADLINE HISTORY: GET /api/tasks/{id}/deadline_history/
+3.2 CREATE TASK: POST /api/tasks/ (Admin Only)
+Request Body:
+  { "title": "Setup OAuth", "project": 1, "assigned_to": 2, "priority": "URGENT", "status": "TODO", "deadline": "2026-09-15T18:00:00Z" }
+Success Response (201 Created): { "id": 5, "title": "Setup OAuth", "status": "TODO" }
 
-3.5 TASK ACTIVITY HISTORY LOG (Optional Enhancement): GET /api/tasks/{id}/activity_history/
-Returns chronological audit log of status changes, reassignments, deadline changes, comments, and file attachments.
+3.3 UPDATE TASK & DEADLINE AUDIT LOG: PATCH /api/tasks/{id}/
+Request Body (Deadline Revision):
+  { "deadline": "2026-10-15T18:00:00Z", "deadline_reason": "Scope expansion for MFA compliance." }
+Success Response (200 OK): { "id": 5, "deadline": "2026-10-15T18:00:00Z", "deadline_history_count": 1 }
+System Behavior: Logs DeadlineHistory, records TaskActivity event, sends email notification to assignee.
+
+3.4 GET TASK DEADLINE HISTORY: GET /api/tasks/{id}/deadline_history/
+Success Response (200 OK):
+  [ { "previous_deadline": "2026-09-15...", "new_deadline": "2026-10-15...", "reason": "Scope expansion", "changed_by_detail": { ... } } ]
+
+3.5 TASK ACTIVITY HISTORY LOG: GET /api/tasks/{id}/activity_history/
+Success Response (200 OK): Chronological audit log of task status updates, deadline revisions, comments, and file attachments.
 
 3.6 TASK COMMENTS: GET / POST /api/tasks/{id}/comments/
+POST Body: { "content": "Completed unit testing." }
+Success Response (201 Created): { "id": 3, "content": "Completed unit testing.", "author_detail": { ... } }
 
-3.7 TASK FILE ATTACHMENTS (Optional Enhancement): GET / POST /api/tasks/{id}/attachments/
-Allows uploading file attachments to tasks and fetching file metadata & download URLs.
+3.7 TASK FILE ATTACHMENTS: GET / POST /api/tasks/{id}/attachments/
+POST Headers: Content-Type: multipart/form-data
+POST Form Data: file: <binary file>
+Success Response (201 Created): { "id": 1, "file_name": "architecture_spec.pdf", "file_size": 245120 }
 
 3.8 DASHBOARD STATS: GET /api/tasks/dashboard_stats/
+Success Response (200 OK):
+  { "total_projects": 3, "total_tasks": 5, "completed_tasks": 2, "overall_completion_rate": 40, "total_deadline_changes": 2 }
