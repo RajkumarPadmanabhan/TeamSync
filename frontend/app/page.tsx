@@ -342,7 +342,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#2a040d] text-white flex flex-col font-sans antialiased selection:bg-rose-800 selection:text-white">
       {/* MNC Navigation Topbar */}
       <Navbar
         onRefresh={loadAllData}
@@ -1260,6 +1260,19 @@ export default function Home() {
         onDismiss={dismissToast}
         confirmDialog={confirmDialog}
       />
+
+      {/* GLOBAL FOOTER WITH COPYRIGHT */}
+      <footer className="mt-auto bg-[#3b0712] border-t border-rose-900/60 py-4 px-6 text-center text-xs text-rose-200">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-white">TeamSync Platform</span>
+            <span className="text-[10px] bg-rose-900 px-2 py-0.5 rounded text-white font-mono font-bold">v6.0</span>
+          </div>
+          <p className="font-semibold text-white">
+            Copyright © 2026 Rajkumar PR. All Rights Reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

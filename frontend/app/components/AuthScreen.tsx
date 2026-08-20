@@ -91,32 +91,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#2a040d] text-white flex items-center justify-center p-4 selection:bg-rose-800 selection:text-white">
       {/* Background Glow Overlay */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-96 h-96 bg-emerald-600/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-rose-900/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-rose-950/30 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
+      <div className="relative w-full max-w-md bg-[#4c0519]/95 border border-rose-900/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
         {/* Header Branding */}
         <div className="text-center space-y-2">
-          <div className="h-12 w-12 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500 via-blue-600 to-emerald-500 flex items-center justify-center shadow-xl shadow-indigo-500/20 ring-1 ring-white/20">
+          <div className="h-12 w-12 mx-auto rounded-2xl bg-gradient-to-br from-rose-700 via-rose-900 to-rose-950 flex items-center justify-center shadow-xl shadow-rose-950/50 ring-1 ring-white/30">
             <Layers className="h-7 w-7 text-white" />
           </div>
           <div className="flex items-center justify-center gap-2">
             <h1 className="text-2xl font-extrabold text-white tracking-tight">TeamSync</h1>
-            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-900/60 text-rose-200 border border-rose-700 uppercase tracking-wider flex items-center gap-1">
               <Building2 className="w-2.5 h-2.5" /> MNC Enterprise
             </span>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-rose-200">
             Team Project & Task Management Suite
           </p>
         </div>
 
         {/* Tab Switcher: Login vs Sign Up */}
-        <div className="flex bg-slate-800/80 p-1 rounded-2xl border border-slate-700/80">
+        <div className="flex bg-[#3b0712] p-1 rounded-2xl border border-rose-900">
           <button
             type="button"
             onClick={() => {
@@ -126,8 +126,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
             }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'login'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-800 text-white shadow-md'
+                : 'text-rose-300 hover:text-white'
             }`}
           >
             Sign In
@@ -141,8 +141,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
             }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'signup'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-800 text-white shadow-md'
+                : 'text-rose-300 hover:text-white'
             }`}
           >
             Create Account
@@ -368,13 +368,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3 bg-rose-800 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-950/40 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span>{loading ? 'Creating Account...' : `Register as ${signupRole === 'ADMIN' ? 'Admin' : 'Team Member'}`}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
         )}
+
+        <div className="pt-4 border-t border-rose-900/60 text-center text-[10px] text-rose-200/90 font-medium">
+          Copyright © 2026 Rajkumar PR. All Rights Reserved.
+        </div>
       </div>
     </div>
   );

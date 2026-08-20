@@ -1,31 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #090d16;
-  --foreground: #f8fafc;
+  --background: #3b0712;
+  --foreground: #ffffff;
+  --burgundy-dark: #2a040d;
+  --burgundy-main: #4c0519;
+  --burgundy-card: #581123;
+  --burgundy-border: #881337;
+  --burgundy-accent: #be123c;
+  --burgundy-bright: #e11d48;
 }
 
 body {
-  background-color: #090d16;
-  color: #f8fafc;
+  background-color: #2a040d;
+  color: #ffffff;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Custom Scrollbar for Enterprise Tables */
+/* Custom Scrollbar for Burgundy Theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #2a040d;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #881337;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #be123c;
 }
