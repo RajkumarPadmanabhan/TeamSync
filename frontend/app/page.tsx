@@ -364,7 +364,7 @@ export default function Home() {
 
                   <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-800 space-y-3">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 font-medium">Total Deadline Revisions:</span>
+                      <span className="text-slate-300 font-medium">Tasks with Revised Deadlines:</span>
                       <span className="font-bold text-amber-400 text-sm">{stats?.total_deadline_changes || 0}</span>
                     </div>
 

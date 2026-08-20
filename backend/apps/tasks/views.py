@@ -53,6 +53,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         
         task = serializer.save(created_by=user)
         
+        # Auto-add assignee to project members so project appears under assigned user's Active Projects
+        if task.assigned_to and not task.project.members.filter(id=task.assigned_to.id).exists():
+            task.project.members.add(task.assigned_to)
+        
         # Log Activity
         TaskActivity.objects.create(
             task=task,
@@ -110,6 +114,10 @@ class TaskViewSet(viewsets.ModelViewSet):
                 raise permissions.PermissionDenied("Team members cannot change task deadline.")
 
         updated_task = serializer.save()
+
+        # Auto-add new assignee to project members so project appears under assigned user's Active Projects
+        if updated_task.assigned_to and not updated_task.project.members.filter(id=updated_task.assigned_to.id).exists():
+            updated_task.project.members.add(updated_task.assigned_to)
 
         # Log Activity & Send Email for Status Change
         if old_status != new_status:
@@ -248,7 +256,8 @@ class TaskViewSet(viewsets.ModelViewSet):
         in_progress_tasks = Task.objects.filter(status='IN_PROGRESS').count()
         todo_tasks = Task.objects.filter(status='TODO').count()
         in_review_tasks = Task.objects.filter(status='IN_REVIEW').count()
-        total_deadline_changes = DeadlineHistory.objects.count()
+        # Count of distinct tasks that have had deadline revisions
+        total_deadline_changes = DeadlineHistory.objects.values('task').distinct().count()
         
         my_tasks_count = Task.objects.filter(assigned_to=user).count() if user.is_authenticated else 0
         my_completed_tasks = Task.objects.filter(assigned_to=user, status='COMPLETED').count() if user.is_authenticated else 0
